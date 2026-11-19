@@ -19,3 +19,10 @@ Single-file, offline-capable seed-map site branded EZseed, built by 𝙴𝚅𝙾
 - `deploy/index.html` — another deployment copy.
 - `DEPLOY.md` — live Vercel URL and free hosting/update directions.
 - `assets/` — original embedded branding assets; `worldgen/` — generator sources, build scripts, WASM and licenses.
+
+## Saved places, utilities and offline app
+- Waypoints are saved locally by seed text, version and dimension. Tap a structure pin to name and save it, or save the map center; view, center on and delete saved points in Layers. Storage belongs to the browser origin, so GitHub Pages and Vercel do not share waypoints; clearing site data removes them.
+- The portal converter divides Overworld X/Z by 8 or multiplies Nether X/Z by 8. It shows exact values and floor-rounded block coordinates (including negatives); actual portal linking can vary.
+- Biome Finder searches the loaded 8,192-block overview using the shared origin and radius. It finds the nearest matching 16-block overview sample whose coordinate is checked with the block-resolution engine. It can miss closer biomes/boundaries; Bedrock remains experimental.
+- PNG download exports the visible map canvas and enabled layers, not the surrounding UI.
+- `manifest.webmanifest`, `service-worker.js`, `icon-192.png` and `icon-512.png` provide install and offline shell support on HTTPS or localhost after the first successful online load. GitHub Pages uses a relative scope. File-only viewing does not provide PWA installation or offline service-worker support.

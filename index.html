@@ -25,6 +25,11 @@ SOFTWARE.
 -->
 <html lang="en">
 <head>
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#f6f5fb">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="EZseed">
+<link rel="apple-touch-icon" href="./icon-192.png">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>EZseed — Minecraft Seed Map</title>
@@ -157,6 +162,15 @@ h1{font-size:clamp(42px,5.4vw,70px);line-height:1.04;letter-spacing:-.055em;marg
 .creator-brand img{width:100%;max-width:220px;display:block;margin:0 auto}
 .creator-brand span{display:block;font-size:11px;color:var(--faint);margin-top:2px}
 
+[hidden]{display:none!important}
+/* Workspace utilities */
+.utility-field{width:100%;min-height:40px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--surface2);color:var(--ink);font:inherit}
+.utility-field:focus{outline:2px solid var(--accent);outline-offset:1px}
+.utility-row{display:flex;gap:6px;align-items:center}.utility-row .utility-field{min-width:0;flex:1}
+.utility-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.utility-actions .btn{flex:1;justify-content:center;padding:8px}
+.waypoint-row{display:flex;gap:5px;align-items:stretch}.waypoint-row .result{flex:1;min-width:0}.waypoint-row .iconbtn{height:auto;min-height:36px;flex-basis:36px}
+.waypoint-meta{display:block;font-size:10px;color:var(--faint);font-weight:400;margin-top:2px}.result .rn{white-space:normal;word-break:break-word}
+@media(max-width:760px){.utility-field{font-size:16px;min-height:44px}}
 /* ---------- WORKSPACE ---------- */
 #workspace{display:none;position:fixed;inset:0;z-index:5;grid-template-rows:62px 1fr;background:var(--bg)}
 body[data-view="workspace"] #workspace{display:grid}
@@ -501,6 +515,7 @@ body[data-mode="dark"] .hero-copy .under{color:#ff5268}
         <div class="field" style="flex:0 0 120px"><label>Version</label><div class="version-picker" data-select="heroVer"><select id="heroVer" aria-label="Minecraft version"><option>Java 1.21.4</option><option>Java 1.21.3</option><option>Java 1.21.1</option><option>Java 1.20.6</option><option>Java 1.19.4</option><option>Java 1.19.2</option><option>Java 1.18.2</option><option>Bedrock 1.21.60</option><option>Bedrock 1.21.50</option><option>Bedrock 1.21.0</option><option>Bedrock 1.20.0</option><option>Bedrock 1.19.0</option><option>Bedrock 1.18.0</option></select></div></div>
         <button class="btn btn-primary" data-open="all" id="heroOpen">Explore <span id="heroArrow"></span></button>
       </div>
+      <div class="utility-actions" style="margin-top:12px;justify-content:flex-start"><button class="btn" type="button" id="installApp" style="flex:0 0 auto">Install app</button><span id="installHelp" class="empty" aria-live="polite">Install for offline use after your first visit.</span></div>
       <div class="hero-meta">
         <div><b>3</b> dimensions</div><div><b>10</b> structure layers</div><div><b>100M</b> explore coordinates</div><div><b>@evorez</b> creator</div>
       </div>
@@ -602,6 +617,26 @@ body[data-mode="dark"] .hero-copy .under{color:#ff5268}
         <div class="empty">Use ~ to keep your height, or enter a Y value. Check terrain before teleporting.</div>
       </div>
 
+      <div class="group" id="waypointGroup">
+        <h4>Saved waypoints <span id="waypointCount">0</span></h4>
+        <div class="utility-row"><input class="utility-field" id="centerWaypointName" maxlength="40" placeholder="Name (e.g. Base)" aria-label="Waypoint name"><button class="btn" id="saveCenterWaypoint" type="button">Save center</button></div>
+        <div class="empty">Save a map pin from its details, or save the map center. Stored on this device for this seed, version and dimension.</div>
+        <div id="waypointList" class="results"></div>
+      </div>
+      <div class="group">
+        <h4>Portal coordinate converter</h4>
+        <select class="utility-field" id="portalDirection" aria-label="Portal conversion direction"><option value="toNether">Overworld → Nether (÷ 8)</option><option value="toOverworld">Nether → Overworld (× 8)</option></select>
+        <div class="coordinate-jump" style="margin-top:8px"><label>X<input id="portalX" type="number" inputmode="numeric" placeholder="0"></label><label>Z<input id="portalZ" type="number" inputmode="numeric" placeholder="0"></label></div>
+        <div class="utility-actions"><button class="btn" type="button" id="portalUseCenter">Use center</button><button class="btn" type="button" id="portalConvert">Convert</button></div>
+        <div id="portalResult" class="empty" aria-live="polite">Enter whole block coordinates. Portal linking may land nearby.</div>
+        <button class="btn findbtn" type="button" id="portalGo" hidden>Go to converted location</button>
+      </div>
+      <div class="group" id="biomeFinderGroup">
+        <h4>Biome finder</h4>
+        <div class="utility-row"><input class="utility-field" id="biomeQuery" type="search" list="biomeSuggestions" placeholder="e.g. Cherry Grove" aria-label="Biome name"><datalist id="biomeSuggestions"></datalist><button class="btn" type="button" id="biomeFind">Find</button></div>
+        <div class="empty">Uses the radius and origin in Nearest finder below. Searches the loaded 8,192 × 8,192 region; results are approximate. Pan to search elsewhere.</div>
+        <div id="biomeResult" class="results" aria-live="polite"></div>
+      </div>
       <div class="group">
         <h4>Terrain <span id="dimLabel">Overworld</span></h4>
         <label class="row"><input type="checkbox" id="biomesChk" checked><span class="swatch" style="background:#6ea34e"></span><span class="nm">Biomes</span><span class="ct" id="biomeCount">14</span></label>
@@ -705,7 +740,7 @@ $('navArrow').innerHTML=svg('arrow',14); $('heroArrow').innerHTML=svg('arrow',14
 $('backBtn').innerHTML=svg('back',15); $('randBtn').innerHTML=svg('dice',15);
 $('mobileLayers').innerHTML=svg('layers',15); $('searchIcon').innerHTML=svg('search',14);
 $('findIcon').innerHTML=svg('locate',14);
-$('zoomStack').innerHTML='<button class="iconbtn" id="zIn" title="Zoom in" aria-label="Zoom in">'+svg('plus',17)+'</button><button class="iconbtn" id="zOut" title="Zoom out" aria-label="Zoom out">'+svg('minus',17)+'</button><button class="iconbtn" id="zHome" title="Recenter on origin" aria-label="Recenter on origin">'+svg('cross',17)+'</button><button class="iconbtn" id="mapFullscreen" type="button" title="Full screen map" aria-label="Full screen map" aria-pressed="false">'+svg('expand',17)+'</button>';
+$('zoomStack').innerHTML='<button class="iconbtn" id="zIn" title="Zoom in" aria-label="Zoom in">'+svg('plus',17)+'</button><button class="iconbtn" id="zOut" title="Zoom out" aria-label="Zoom out">'+svg('minus',17)+'</button><button class="iconbtn" id="zHome" title="Recenter on origin" aria-label="Recenter on origin">'+svg('cross',17)+'</button><button class="iconbtn" id="mapFullscreen" type="button" title="Full screen map" aria-label="Full screen map" aria-pressed="false">'+svg('expand',17)+'</button><button class="iconbtn" id="downloadMap" type="button" title="Download map image" aria-label="Download map image">↓</button>';
 
 /* ============================ config ============================ */
 const WORLD=8192, HALF=4096, MAX_COORD=100000000;
@@ -740,7 +775,7 @@ const PAL={
 };
 const APPS=[
  {tag:'Featured · all layers',title:'Seed Map',desc:'Biomes, structures and slime chunks in one map. Pan, zoom and toggle layers.',icon:'map',layer:'all',tint:'#eee9ff',tcol:'#6b46ff',featured:true},
- {tag:'Terrain',title:'Biome Finder',desc:'Locate deserts, cherry groves, badlands and every other biome.',icon:'biome',layer:'biomes',tint:'#e6f6ec',tcol:'#2f6b4a'},
+ {tag:'Terrain',title:'Biome Finder',desc:'Find sampled deserts, cherry groves and other biomes in the loaded region.',icon:'biome',layer:'biomes',tint:'#e6f6ec',tcol:'#2f6b4a'},
  {tag:'Overworld',title:'Village Finder',desc:'Find predicted village locations and coordinates in your world.',icon:'village',layer:'village',tint:'#e6f6ec',tcol:'#2f6b4a'},
  {tag:'Overworld',title:'Stronghold Finder',desc:'Strongholds within the mapped area.',icon:'stronghold',layer:'stronghold',tint:'#eee9ff',tcol:'#6b46ff'},
  {tag:'Utility',title:'Slime Chunk Finder',desc:'Chunk grid plus highlighted slime-spawning chunks for farm planning.',icon:'slime',layer:'slime',tint:'#e6f6ec',tcol:'#2f6b4a'},
@@ -835,6 +870,7 @@ function biomeById(id){
 function biomeAt(wx,wz){return biomeById(engine.engine_biome_at(Math.floor(wx),Math.floor(wz)));}
 function rgbCss(c){return 'rgb('+c.rgb.join(',')+')';}
 let texture=null,heroTexture=null,genToken=0,texOriginX=-HALF,texOriginZ=-HALF,recenterTimer=0;
+let overviewIds=null,overviewComplete=false,biomeSearchToken=0,biomeSearchResult=null;
 let strongholdCache={key:"",count:0,points:[]};
 let strongholdWorker=null;
 // Strongholds can take hundreds of milliseconds; calculate them in an isolated worker.
@@ -869,7 +905,7 @@ function prepareStrongholds(x,z,token,done){
 let detailTexture=null,detailTimer=0,detailToken=0,pendingDetailKey="";
 function buildTextureAsync(dim,done,originX,originZ){
  const token=++genToken,size=512,scale=16,tileSize=32,cv=document.createElement('canvas');cv.width=cv.height=size;
- const cx=cv.getContext('2d'),img=cx.createImageData(size,size);observedBiomes=new Map();
+ const cx=cv.getContext('2d'),img=cx.createImageData(size,size);observedBiomes=new Map();overviewIds=new Int32Array(size*size);overviewIds.fill(-1);overviewComplete=false;biomeSearchToken++;biomeSearchResult=null;$('biomeResult').textContent='';
  // Sample nearby tiles first: biomes spread out in a circle instead of horizontal strips.
  const cameraX=Math.max(0,Math.min(size-1,(st.cam.x-originX)/scale));
  const cameraZ=Math.max(0,Math.min(size-1,(st.cam.z-originZ)/scale));
@@ -886,14 +922,14 @@ function buildTextureAsync(dim,done,originX,originZ){
    const ids=new Int32Array(engine.memory.buffer,ptr,tileSize*tileSize);
    for(let i=0;i<ids.length;i++){
     const biome=biomeById(ids[i]);observedBiomes.set(biome.id,biome);
-    const x=tile.x+i%tileSize,z=tile.z+Math.floor(i/tileSize),n=hash2(originX/16+x,originZ/16+z,1601),sh=.96+(n-.5)*.07,o=(z*size+x)*4;
+    const x=tile.x+i%tileSize,z=tile.z+Math.floor(i/tileSize);overviewIds[z*size+x]=ids[i];const n=hash2(originX/16+x,originZ/16+z,1601),sh=.96+(n-.5)*.07,o=(z*size+x)*4;
     img.data[o]=biome.rgb[0]*sh;img.data[o+1]=biome.rgb[1]*sh;img.data[o+2]=biome.rgb[2]*sh;img.data[o+3]=255;
    }
    engine.engine_free(ptr);cx.putImageData(img,0,0,tile.x,tile.z,tileSize,tileSize);completed++;
    if(performance.now()-frameStart>=7)break;
   }
   const progress=Math.round(completed/tiles.length*100);loader.style.setProperty('--progress',progress+'%');loader.setAttribute('aria-valuenow',String(progress));render();drawMinimap();
-  if(completed<tiles.length)requestAnimationFrame(step);else{if(!heroTexture){heroTexture=cv;drawHero();}setTimeout(()=>{if(token!==genToken)return;try{done&&done();}catch(e){console.error(e);loader.classList.remove('on');toast('World generation failed. Try another seed.');}},0);}
+  if(completed<tiles.length)requestAnimationFrame(step);else{overviewComplete=true;updateBiomeSuggestions();if(!heroTexture){heroTexture=cv;drawHero();}setTimeout(()=>{if(token!==genToken)return;try{done&&done();}catch(e){console.error(e);loader.classList.remove('on');toast('World generation failed. Try another seed.');}},0);}
  }
  requestAnimationFrame(step);
 }
@@ -942,7 +978,7 @@ function applyFocus(layer){
  // hybrid model: a finder card opens the shared workspace focused on one layer
  st.biomes=true;st.slime=false;st.chunkGrid=false;st.coordGrid=true;
  Object.keys(st.layers).forEach(t=>st.layers[t]=(layer==='all'));
- if(layer==='biomes')return;
+ if(layer==='biomes'){setTimeout(()=>{$('biomeQuery').focus({preventScroll:true});if(innerWidth<=760)setLayersOpen(true);$('biomeFinderGroup').scrollIntoView({block:'nearest'});},250);return;}
  if(layer==='slime'){st.slime=true;st.chunkGrid=true;st.biomes=true;return;}
  if(st.layers.hasOwnProperty(layer))st.layers[layer]=true;
 }
@@ -999,6 +1035,7 @@ function renderSidebar(){
   (st.dim==='overworld'?'<label class="row"><input type="checkbox" data-ov="slime" '+(st.slime?'checked':'')+'><span class="swatch" style="background:rgba(126,231,135,.35);border-color:#7ee787"></span><span class="nm">Slime chunks</span><span class="ct">~10%</span></label>':'')+
   '<label class="row"><input type="checkbox" data-ov="chunkGrid" '+(st.chunkGrid?'checked':'')+'><span class="swatch" style="background:rgba(255,255,255,.12)"></span><span class="nm">Chunk grid</span><span class="ct">16×16</span></label>'+
   '<label class="row"><input type="checkbox" data-ov="coordGrid" '+(st.coordGrid?'checked':'')+'><span class="swatch" style="background:rgba(255,255,255,.2)"></span><span class="nm">Coordinate grid</span><span class="ct">auto</span></label>';
+ renderWaypoints();
  $('legend').innerHTML=Array.from(observedBiomes.values()).sort((a,b)=>a.name.localeCompare(b.name)).map(p=>'<span><i style="background:'+rgbCss(p)+'"></i>'+p.name+'</span>').join('');
  const vis=structures.filter(s=>st.layers[s.type]).length;
  $('structCount').textContent=vis+' visible';
@@ -1073,6 +1110,7 @@ function render(){
  if(st.slime&&st.dim==='overworld'&&st.scale>.5)drawSlime();
  // structures
  drawStructures();
+ drawWaypoints();
  // spawn
  drawSpawn();
  updateHud();requestDetail();requestRecenter();
@@ -1334,20 +1372,21 @@ function clampCam(){
 }
 function hitTest(mx,my){
  let best=null,bd=17;
- for(const s of structures){
-  if(!st.layers[s.type])continue;
+ for(const s of [...visibleWaypoints(),...structures]){
+  if(s.type!=='waypoint'&&!st.layers[s.type])continue;
   const p=w2s(s.x,s.z),d=Math.hypot(p.x-mx,p.y-my);
   if(d<bd){bd=d;best=s;}
  }
  return best;
 }
 function cardHTML(s,isTip){
+ if(s.type==='waypoint')return '<div class="ph"><span class="dot" style="background:#e5233b"></span><b>'+escapeHTML(s.name)+'</b>'+(isTip?'':'<button class="x" data-close="1" aria-label="Close">×</button>')+'</div><div class="kv">x '+s.x.toLocaleString()+' · z '+s.z.toLocaleString()+'<br>Saved waypoint</div>'+(isTip?'':'<div class="actions"><button class="btn" data-copy="'+s.x+' '+s.z+'">Copy /tp</button><button class="btn" data-delete-waypoint="'+s.id+'">Delete</button></div>');
  const c=TYPES[s.type],d=Math.round(Math.hypot(s.x,s.z));
  return '<div class="ph"><img class="structure-icon" alt="" src="'+sprites[s.type].toDataURL()+'"><b>'+c.name+'</b>'+
    (isTip?'':'<button class="x" data-close="1" title="Close">×</button>')+'</div>'+
   '<div class="kv"><b>x '+s.x.toLocaleString()+'</b> · <b>z '+s.z.toLocaleString()+'</b><br>'+s.biome+' · '+d.toLocaleString()+' blocks from origin</div>'+
   (isTip?'<button class="btn" style="margin-top:9px;padding:7px 10px;font-size:11px;width:100%;justify-content:center" data-copy="'+s.x+' '+s.z+'">'+svg('copy',13)+' Copy /tp</button>':
-   '<div class="actions"><button class="btn" data-center="'+s.id+'">'+svg('cross',13)+' Center</button><button class="btn btn-primary" data-copy="'+s.x+' '+s.z+'">'+svg('copy',13)+' Copy /tp</button></div>');
+   '<div class="actions"><button class="btn" data-center="'+s.id+'">'+svg('cross',13)+' Center</button><button class="btn btn-primary" data-copy="'+s.x+' '+s.z+'">'+svg('copy',13)+' Copy /tp</button></div><div class="utility-row" style="margin-top:8px"><input id="pinWaypointName" class="utility-field" maxlength="40" placeholder="Waypoint name" aria-label="Waypoint name"><button class="btn" type="button" data-save-pin="'+s.id+'">Save</button></div>');
 }
 let tipTimer=null;
 function showTip(s,mx,my){
@@ -1378,6 +1417,77 @@ function animateTo(x,z){
  }requestAnimationFrame(step);
 }
 
+/* ============================ saved waypoints ============================ */
+const WAYPOINT_KEY='ezseed-waypoints-v1';let waypoints=[];
+try{const saved=JSON.parse(localStorage.getItem(WAYPOINT_KEY)||'[]');if(Array.isArray(saved))waypoints=saved.filter(w=>w&&typeof w.id==='string'&&typeof w.name==='string'&&Number.isSafeInteger(w.x)&&Number.isSafeInteger(w.z)&&Math.abs(w.x)<=MAX_COORD&&Math.abs(w.z)<=MAX_COORD&&DIMS[w.dim]&&typeof w.seed==='string'&&typeof w.version==='string');}catch(_){}
+function escapeHTML(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function visibleWaypoints(){return waypoints.filter(w=>w.seed===seedText&&w.version===$('verSel').value&&w.dim===st.dim).map(w=>({...w,type:'waypoint'}));}
+function writeWaypoints(next){try{localStorage.setItem(WAYPOINT_KEY,JSON.stringify(next));waypoints=next;return true;}catch(_){toast('Could not save on this device. Check browser storage.');return false;}}
+function saveWaypoint(name,x,z){
+ name=name.trim();if(!name){toast('Enter a waypoint name');return;}
+ if(waypoints.length>=500){toast('Waypoint limit reached (500)');return;}
+ const w={id:'w'+Date.now().toString(36)+Math.random().toString(36).slice(2,10),name:name.slice(0,40),x:Math.round(x),z:Math.round(z),seed:seedText,version:$('verSel').value,dim:st.dim};
+ if(!writeWaypoints([...waypoints,w]))return;renderWaypoints();render();$('centerWaypointName').value='';const pin=$('pinWaypointName');if(pin)pin.value='';toast('Waypoint saved on this device');
+}
+function deleteWaypoint(id){if(!writeWaypoints(waypoints.filter(w=>w.id!==id)))return;if(st.selected&&st.selected.id===id){st.selected=null;$('detailCard').style.display='none';}renderWaypoints();render();toast('Waypoint deleted');}
+function renderWaypoints(){
+ const list=visibleWaypoints();$('waypointCount').textContent=String(list.length);
+ $('waypointList').innerHTML=list.length?list.map(w=>'<div class="waypoint-row"><button type="button" class="result" data-goto-waypoint="'+escapeHTML(w.id)+'"><span class="dot" style="background:#e5233b"></span><span class="rn">'+escapeHTML(w.name)+'<span class="waypoint-meta">x '+w.x.toLocaleString()+' · z '+w.z.toLocaleString()+'</span></span></button><button type="button" class="iconbtn" data-delete-waypoint="'+escapeHTML(w.id)+'" aria-label="Delete '+escapeHTML(w.name)+'">×</button></div>').join(''):'<div class="empty">No saved waypoints for this world and dimension.</div>';
+}
+function drawWaypoints(){
+ for(const w of visibleWaypoints()){
+  const p=w2s(w.x,w.z);if(p.x<-20||p.y<-20||p.x>W+20||p.y>H+20)continue;
+  ctx.save();ctx.beginPath();ctx.arc(p.x,p.y,8,0,Math.PI*2);ctx.fillStyle='#e5233b';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#fff';ctx.stroke();ctx.fillStyle='#fff';ctx.font='bold 9px '+canvasMono;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('W',p.x,p.y+.5);ctx.restore();
+ }
+}
+$('saveCenterWaypoint').onclick=()=>saveWaypoint($('centerWaypointName').value,st.cam.x,st.cam.z);
+/* ============================ portal converter ============================ */
+let portalTarget=null;
+function convertPortal(){
+ const x=$('portalX').value.trim(),z=$('portalZ').value.trim(),direction=$('portalDirection').value;
+ if(!/^[+-]?\d+$/.test(x)||!/^[+-]?\d+$/.test(z)||!Number.isSafeInteger(Number(x))||!Number.isSafeInteger(Number(z))||Math.abs(Number(x))>MAX_COORD||Math.abs(Number(z))>MAX_COORD){portalTarget=null;$('portalGo').hidden=true;$('portalResult').textContent='Enter whole X/Z values within ±100,000,000.';return;}
+ const factor=direction==='toNether'?1/8:8,ex=Number(x)*factor,ez=Number(z)*factor,bx=Math.floor(ex),bz=Math.floor(ez),dim=direction==='toNether'?'nether':'overworld';
+ portalTarget={x:bx,z:bz,dim};const inside=Math.abs(bx)<=MAX_COORD&&Math.abs(bz)<=MAX_COORD;
+ $('portalResult').textContent=DIMS[dim].label+': X '+ex.toLocaleString('en-US',{maximumFractionDigits:3})+' · Z '+ez.toLocaleString('en-US',{maximumFractionDigits:3})+' (block: '+bx.toLocaleString()+', '+bz.toLocaleString()+'). '+(inside?'Actual portals may link nearby.':'Outside EZseed’s coordinate range.');$('portalGo').hidden=!inside;
+}
+$('portalConvert').onclick=convertPortal;
+$('portalUseCenter').onclick=()=>{$('portalX').value=Math.floor(st.cam.x);$('portalZ').value=Math.floor(st.cam.z);$('portalDirection').value=st.dim==='nether'?'toOverworld':'toNether';convertPortal();};
+for(const id of ['portalX','portalZ','portalDirection'])$(id).addEventListener('input',()=>{portalTarget=null;$('portalGo').hidden=true;});
+$('portalGo').onclick=()=>{if(!portalTarget)return;stopFling();st.dim=portalTarget.dim;st.cam.x=portalTarget.x;st.cam.z=portalTarget.z;syncDims();setLayersOpen(false);loadWorld(true);if(innerWidth<=760)$('mapArea').scrollIntoView({block:'start'});};
+/* ============================ sampled biome finder ============================ */
+function updateBiomeSuggestions(){
+ const names=new Set(Array.from(observedBiomes.values(),b=>b.name));
+ // Include known valid names even when that biome is absent from the loaded window.
+ for(let id=0;id<256;id++){const b=biomeById(id);if(!/^Biome \d+$/.test(b.name))names.add(b.name);}
+ $('biomeSuggestions').innerHTML=Array.from(names).sort((a,b)=>a.localeCompare(b)).map(n=>'<option value="'+escapeHTML(n)+'"></option>').join('');
+}
+function findBiome(){
+ const query=$('biomeQuery').value.trim().toLowerCase().replace(/[_\s]+/g,' ');const result=$('biomeResult');
+ if(!query){result.textContent='Enter a biome name.';return;}
+ if(!overviewComplete||!overviewIds){result.textContent='The map is still loading. Try again when it finishes.';return;}
+ const ids=new Set();for(let id=0;id<256;id++){const name=biomeById(id).name.toLowerCase().replace(/[_\s]+/g,' ');if(name===query)ids.add(id);}
+ if(!ids.size){result.textContent='Biome name not recognized. Choose a suggestion, such as Cherry Grove.';return;}
+ const token=++biomeSearchToken,gen=genToken,samples=overviewIds,ox=texOriginX,oz=texOriginZ,origin=st.origin==='spawn'?{x:0,z:0}:{x:st.cam.x,z:st.cam.z},limit=st.radius*st.radius;
+ let i=0,best=null,bestD=Infinity;result.textContent='Searching sampled biomes…';
+ function step(){
+  if(token!==biomeSearchToken||gen!==genToken)return;
+  const end=Math.min(samples.length,i+16384);
+  for(;i<end;i++){
+   if(!ids.has(samples[i]))continue;const x=ox+(i%512)*16,z=oz+Math.floor(i/512)*16,dx=x-origin.x,dz=z-origin.z,d=dx*dx+dz*dz;
+   if(d>limit||d>=bestD||Math.abs(x)>MAX_COORD||Math.abs(z)>MAX_COORD)continue;
+   // Verify the candidate at block resolution; the overview itself is sampled at 16 blocks.
+   if(ids.has(engine.engine_biome_at(x,z))){best={x,z,name:biomeById(samples[i]).name};bestD=d;}
+  }
+  if(i<samples.length){requestAnimationFrame(step);return;}
+  biomeSearchResult=best;
+  if(!best){result.innerHTML='<div class="empty">No matching sampled biome found in the loaded region and radius. Move the map or increase the radius.</div>';return;}
+  result.innerHTML='<button class="result" type="button" data-goto-biome="1"><span class="dot" style="background:#e59eb8"></span><span class="rn">'+escapeHTML(best.name)+'<span class="waypoint-meta">x '+best.x.toLocaleString()+' · z '+best.z.toLocaleString()+'</span></span><span class="rd">~'+Math.round(Math.sqrt(bestD)).toLocaleString()+' blocks</span></button><div class="empty">Nearest matching overview sample checked at its coordinate; closer biomes or boundaries may be missed. Tap to center.</div>';
+ }
+ requestAnimationFrame(step);
+}
+$('biomeFind').onclick=findBiome;$('biomeQuery').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();findBiome();}});
+/* Download the map canvas, including visible layers, grid and saved markers. */
+$('downloadMap').onclick=()=>{try{render();map.toBlob(blob=>{if(!blob){toast('Could not export map');return;}const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='ezseed-'+st.dim+'-'+Date.now()+'.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);toast('Map image downloaded');},'image/png');}catch(_){toast('Could not export map');}};
 /* minimap drag */
 let mmDown=false;
 function mmGoto(e){
@@ -1395,6 +1505,10 @@ function setLayersOpen(open){document.body.classList.toggle('side-open',open);$(
 document.addEventListener('click',e=>{
  const open=e.target.closest('[data-open]');
  if(open){e.preventDefault();openWorkspace(open.dataset.open,open.dataset.dim||(open.dataset.open==='all'?st.dim:'overworld'));return;}
+ const save=e.target.closest('[data-save-pin]');if(save){const s=structures.find(q=>q.id===save.dataset.savePin);if(s)saveWaypoint($('pinWaypointName').value,s.x,s.z);return;}
+ const del=e.target.closest('[data-delete-waypoint]');if(del){deleteWaypoint(del.dataset.deleteWaypoint);return;}
+ const waypoint=e.target.closest('[data-goto-waypoint]');if(waypoint){const s=visibleWaypoints().find(q=>q.id===waypoint.dataset.gotoWaypoint);if(s){selectStructure(s);animateTo(s.x,s.z);if(innerWidth<=760)setLayersOpen(false);}return;}
+ const biomeGo=e.target.closest('[data-goto-biome]');if(biomeGo&&biomeSearchResult){animateTo(biomeSearchResult.x,biomeSearchResult.z);if(innerWidth<=760)setLayersOpen(false);return;}
  const cp=e.target.closest('[data-copy]');
  if(cp){const y=$('tpY').value.trim(),parts=cp.dataset.copy.split(' ');if(!/^(?:~(?:[+-]?\d+)?|[+-]?\d+)$/.test(y)){toast('Teleport Y: enter ~, ~10, or a whole number');$('tpY').focus();return;}copyText('/tp @s '+parts[0]+' '+y+' '+parts[1]);return;}
  const go=e.target.closest('[data-goto]');
@@ -1499,6 +1613,12 @@ function setMode(dark){document.body.dataset.mode=dark?'dark':'light';document.q
 let savedDark=false;try{savedDark=localStorage.getItem('evorez-mode')==='dark';}catch(_){}setMode(savedDark);
 document.querySelectorAll('.theme-toggle').forEach(b=>b.addEventListener('click',()=>setMode(document.body.dataset.mode!=='dark')));
 
+/* Installable offline shell. Service workers require HTTPS (or localhost). */
+if('serviceWorker' in navigator&&location.protocol!=='file:')window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(e=>console.warn('Offline support unavailable:',e)));
+let installPrompt=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;});
+$('installApp').onclick=async()=>{if(installPrompt){const p=installPrompt;installPrompt=null;await p.prompt();await p.userChoice;}else $('installHelp').textContent=/iPhone|iPad|iPod/i.test(navigator.userAgent)?'In Safari, tap Share → Add to Home Screen.':'Use your browser menu → Install app or Add to Home screen.';};
+window.addEventListener('appinstalled',()=>{$('installApp').hidden=true;$('installHelp').textContent='Installed. Open it once online to prepare offline use.';});
+if(matchMedia('(display-mode: standalone)').matches||navigator.standalone)$('installApp').hidden=true;
 /* Boot both local worldgen engines. Never substitute demo data on failure. */
 (async function boot(){
  document.querySelectorAll('[data-open]').forEach(b=>b.setAttribute('aria-disabled','true'));
