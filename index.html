@@ -586,8 +586,6 @@ body[data-mode="dark"] .theme-options button{background:rgba(30,29,37,.56)}
 @media(max-width:760px){.nav .nav-social{display:flex}.nav .nav-social .iconbtn{width:36px;height:36px;flex-basis:36px}.nav .theme-picker{margin-left:auto}}
 @media(max-width:500px){.nav .nav-open-label{display:none}.nav #navOpen{width:44px;height:44px;justify-content:center;padding:0}.nav #navArrow{display:flex}}
 
-.seed-samples{margin:0 0 62px}.sample-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}.sample-card{display:flex;flex-direction:column;gap:9px;text-align:left;padding:20px;border-radius:28px;color:var(--ink);min-width:0}.sample-card b{font-size:15px}.sample-card span{font-family:var(--mono);font-size:12px;overflow-wrap:anywhere;color:var(--muted)}.sample-card small{font-size:11px;color:var(--accent);font-weight:750}.sample-card:hover{border-color:var(--accent)}
-@media(max-width:760px){.sample-grid{grid-template-columns:1fr}.seed-samples{margin-bottom:38px}}
 .measure-status{color:var(--muted);font-size:12px;line-height:1.5;margin-top:8px}
 </style>
 </head>
@@ -652,15 +650,6 @@ body[data-mode="dark"] .theme-options button{background:rgba(30,29,37,.56)}
     <span><i></i> Java &amp; Bedrock</span><span><i></i> Select your version</span>
     <span><i></i> 3 dimensions</span><span><i></i> 10 structure layers</span><span><i></i> Powered by Cubiomes</span>
   </div>
-
-  <section id="seedSamples" class="seed-samples">
-    <div class="section-head"><div><h2>Seeds to explore</h2><p>Try a sample seed, then explore it in your selected version.</p></div></div>
-    <div class="sample-grid">
-      <button type="button" class="glass sample-card" data-sample-seed="12345"><b>First adventure</b><span>12345</span><small>Open in map →</small></button>
-      <button type="button" class="glass sample-card" data-sample-seed="8675309"><b>Fresh world</b><span>8675309</span><small>Open in map →</small></button>
-      <button type="button" class="glass sample-card" data-sample-seed="-9065479248748140566"><b>New discoveries</b><span>−9065479248748140566</span><small>Open in map →</small></button>
-    </div>
-  </section>
 
   <section id="apps">
     <div class="section-head">
@@ -1752,7 +1741,6 @@ mm.addEventListener('pointerup',()=>mmDown=false);
 function setLayersOpen(open){document.body.classList.toggle('side-open',open);$('mobileLayers').setAttribute('aria-expanded',String(open));}
 /* generic events */
 document.addEventListener('click',e=>{
- const sample=e.target.closest('[data-sample-seed]');if(sample){setSeed(sample.dataset.sampleSeed,false);openWorkspace('all','overworld');return;}
  const open=e.target.closest('[data-open]');
  if(open){e.preventDefault();openWorkspace(open.dataset.open,open.dataset.dim||(open.dataset.open==='all'?st.dim:'overworld'));return;}
  const save=e.target.closest('[data-save-pin]');if(save){const s=structures.find(q=>q.id===save.dataset.savePin);if(s)saveWaypoint($('pinWaypointName').value,s.x,s.z);return;}

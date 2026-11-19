@@ -1,5 +1,5 @@
 /* EZseed offline app shell. Scoped to the hosting folder, including GitHub Pages. */
-const CACHE='ezseed-shell-v11';
+const CACHE='ezseed-shell-v12';
 const root=new URL('./',self.registration.scope);
 const files=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png'].map(p=>new URL(p,root).href);
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(files)).then(()=>self.skipWaiting())));
