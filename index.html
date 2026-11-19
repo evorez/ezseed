@@ -489,6 +489,58 @@ body[data-mode="dark"] .hero-copy .under{color:#ff5268}
  #coords{bottom:calc(max(10px,env(safe-area-inset-bottom)) + 54px)}
  #scalebar{bottom:calc(max(10px,env(safe-area-inset-bottom)) + 108px)}
 }
+/* Rounded, grouped map controls for touch and pointer users. */
+#mapArea{--map-right:16px;--overview-size:150px}
+#mapArea:fullscreen,body.map-fullscreen-fallback #mapArea{--map-right:max(16px,env(safe-area-inset-right))}
+#zoomStack{align-items:center;gap:8px}
+#zoomStack .zoom-pill{display:flex;flex-direction:column;align-items:center;padding:3px;border:1px solid var(--line);border-radius:999px;background:var(--surface);box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.62)}
+#zoomStack .zoom-pill .iconbtn{width:38px;height:38px;flex:0 0 38px;border:0;border-radius:50%;background:transparent;box-shadow:none}
+#zoomStack .zoom-pill .iconbtn:hover{background:var(--surface2)}
+#zoomStack .zoom-divider{width:23px;height:1px;background:var(--line)}
+#zoomStack>.iconbtn{border-radius:50%}
+#minimapWrap{border-radius:22px;overflow:hidden}
+#minimap{border-radius:14px;touch-action:none;width:var(--overview-size);height:var(--overview-size)}
+@media(max-width:760px){
+ #mapArea{--map-right:max(10px,env(safe-area-inset-right))}
+ #zoomStack .zoom-pill .iconbtn{width:44px;height:44px;flex-basis:44px}
+}
+/* Landscape keeps overview in the top-right and moves tools alongside it. */
+@media(orientation:landscape){
+ #mapArea #minimapWrap{display:block;top:16px;right:var(--map-right);bottom:auto}
+ #mapArea #zoomStack,#mapArea:fullscreen #zoomStack,body.map-fullscreen-fallback #zoomStack{top:16px;right:calc(var(--map-right) + var(--overview-size) + 28px);transform:none}
+}
+@media(orientation:landscape) and (max-width:900px){
+ #mapArea{--overview-size:120px}
+ #mapArea #minimapWrap{top:10px}
+ #mapArea #zoomStack,#mapArea:fullscreen #zoomStack,body.map-fullscreen-fallback #zoomStack{top:10px}
+}
+/* Touch-sized zoom controls on phones and tablets, even when rotated. */
+@media(pointer:coarse){
+ #zoomStack .zoom-pill .iconbtn{width:44px;height:44px;flex-basis:44px}
+ #zoomStack>.iconbtn{width:44px;height:44px;flex-basis:44px}
+}
+/* Rotated phones can be wider than 760px: retain page scrolling and explicit Move map mode. */
+@media(min-width:761px) and (max-width:932px) and (orientation:landscape) and (pointer:coarse){
+ body[data-view="workspace"]{overflow-x:hidden;overflow-y:auto}
+ #workspace{position:relative;inset:auto;height:auto;min-height:100vh;min-height:100dvh;grid-template-rows:auto auto auto}
+ .ws-body{display:block}
+ #mapArea{height:85dvh;min-height:300px;max-height:700px;--overview-size:120px}
+ #mapCanvas{touch-action:pan-y;cursor:default}
+ #mapCanvas.map-move{touch-action:none;cursor:grab}
+ .map-touch-mode{display:inline-flex;align-items:center;justify-content:center;left:10px;top:10px;z-index:4;min-height:44px;padding:8px 13px;border-radius:11px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);font-size:12px;font-weight:750;color:var(--ink)}
+ .map-touch-mode[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+ #mobileLayers{display:grid;width:44px;height:44px;flex-basis:44px}
+ .sidebar{position:fixed;left:0;right:0;bottom:0;top:auto;max-height:80dvh;z-index:30;border-radius:18px 18px 0 0;border-right:0;border-top:1px solid var(--line);transform:translateY(102%);visibility:hidden;pointer-events:none;overscroll-behavior:contain;box-shadow:0 -14px 36px rgba(26,21,48,.12);transition:transform .24s cubic-bezier(.2,.8,.2,1),visibility 0s linear .24s}
+ body.side-open .sidebar{transform:translateY(0);visibility:visible;pointer-events:auto;transition:transform .24s cubic-bezier(.2,.8,.2,1),visibility 0s}
+ #closeLayers{display:block;font-size:18px;color:var(--ink);min-height:40px;padding:8px}
+ .side-actions{display:flex;align-items:center;gap:10px}
+ #sheetBackdrop{display:block;position:fixed;inset:0;z-index:29;background:rgba(26,21,48,.28);border:0;opacity:0;pointer-events:none;transition:opacity .2s ease}
+ body.side-open #sheetBackdrop{opacity:1;pointer-events:auto}
+ #detailCard{top:62px;max-width:calc(100% - 70px);min-width:0}
+ .mobile-map-help{display:block;padding:24px 16px max(35px,env(safe-area-inset-bottom));color:var(--muted);font-size:14px;line-height:1.6}
+ .mobile-map-help h2{font-size:22px;color:var(--ink);margin:0 0 8px}.mobile-map-help p{margin:0 0 15px}
+ .mobile-demo{border:1px solid #f3e3ae;background:#fff8e6;border-radius:12px;padding:12px;color:#6b4a08}
+}
 </style>
 </head>
 <body data-view="landing">
@@ -750,7 +802,7 @@ $('navArrow').innerHTML=svg('arrow',14); $('heroArrow').innerHTML=svg('arrow',14
 $('backBtn').innerHTML=svg('back',15); $('randBtn').innerHTML=svg('dice',15);
 $('mobileLayers').innerHTML=svg('layers',15); $('searchIcon').innerHTML=svg('search',14);
 $('findIcon').innerHTML=svg('locate',14);
-$('zoomStack').innerHTML='<button class="iconbtn" id="zIn" title="Zoom in" aria-label="Zoom in">'+svg('plus',17)+'</button><button class="iconbtn" id="zOut" title="Zoom out" aria-label="Zoom out">'+svg('minus',17)+'</button><button class="iconbtn" id="zHome" title="Recenter on origin" aria-label="Recenter on origin">'+svg('cross',17)+'</button><button class="iconbtn" id="mapFullscreen" type="button" title="Full screen map" aria-label="Full screen map" aria-pressed="false">'+svg('expand',17)+'</button>';
+$('zoomStack').innerHTML='<div class="zoom-pill" role="group" aria-label="Zoom controls"><button class="iconbtn" id="zIn" title="Zoom in" aria-label="Zoom in">'+svg('plus',17)+'</button><span class="zoom-divider" aria-hidden="true"></span><button class="iconbtn" id="zOut" title="Zoom out" aria-label="Zoom out">'+svg('minus',17)+'</button></div><button class="iconbtn" id="zHome" title="Recenter on origin" aria-label="Recenter on origin">'+svg('cross',17)+'</button><button class="iconbtn" id="mapFullscreen" type="button" title="Full screen map" aria-label="Full screen map" aria-pressed="false">'+svg('expand',17)+'</button>';
 
 /* ============================ config ============================ */
 const WORLD=8192, HALF=4096, MAX_COORD=100000000;
@@ -984,11 +1036,12 @@ function openWorkspace(layer,dim){
  document.body.dataset.view='workspace';document.body.classList.remove('side-open');setTouchMode(false);window.scrollTo(0,0);
  requestAnimationFrame(()=>{resizeMap();loadWorld(false);});
 }
+function isCompactUI(){return window.matchMedia('(max-width:760px), (min-width:761px) and (max-width:932px) and (orientation:landscape) and (pointer:coarse)').matches;}
 function applyFocus(layer){
  // hybrid model: a finder card opens the shared workspace focused on one layer
  st.biomes=true;st.slime=false;st.chunkGrid=false;st.coordGrid=true;
  Object.keys(st.layers).forEach(t=>st.layers[t]=(layer==='all'));
- if(layer==='biomes'){setTimeout(()=>{$('biomeQuery').focus({preventScroll:true});if(innerWidth<=760)setLayersOpen(true);$('biomeFinderGroup').scrollIntoView({block:'nearest'});},250);return;}
+ if(layer==='biomes'){setTimeout(()=>{$('biomeQuery').focus({preventScroll:true});if(isCompactUI())setLayersOpen(true);$('biomeFinderGroup').scrollIntoView({block:'nearest'});},250);return;}
  if(layer==='slime'){st.slime=true;st.chunkGrid=true;st.biomes=true;return;}
  if(st.layers.hasOwnProperty(layer))st.layers[layer]=true;
 }
@@ -1463,7 +1516,7 @@ function convertPortal(){
 $('portalConvert').onclick=convertPortal;
 $('portalUseCenter').onclick=()=>{$('portalX').value=Math.floor(st.cam.x);$('portalZ').value=Math.floor(st.cam.z);$('portalDirection').value=st.dim==='nether'?'toOverworld':'toNether';convertPortal();};
 for(const id of ['portalX','portalZ','portalDirection'])$(id).addEventListener('input',()=>{portalTarget=null;$('portalGo').hidden=true;});
-$('portalGo').onclick=()=>{if(!portalTarget)return;stopFling();st.dim=portalTarget.dim;st.cam.x=portalTarget.x;st.cam.z=portalTarget.z;syncDims();setLayersOpen(false);loadWorld(true);if(innerWidth<=760)$('mapArea').scrollIntoView({block:'start'});};
+$('portalGo').onclick=()=>{if(!portalTarget)return;stopFling();st.dim=portalTarget.dim;st.cam.x=portalTarget.x;st.cam.z=portalTarget.z;syncDims();setLayersOpen(false);loadWorld(true);if(isCompactUI())$('mapArea').scrollIntoView({block:'start'});};
 /* ============================ sampled biome finder ============================ */
 function updateBiomeSuggestions(){
  const names=new Set(Array.from(observedBiomes.values(),b=>b.name));
@@ -1517,12 +1570,12 @@ document.addEventListener('click',e=>{
  if(open){e.preventDefault();openWorkspace(open.dataset.open,open.dataset.dim||(open.dataset.open==='all'?st.dim:'overworld'));return;}
  const save=e.target.closest('[data-save-pin]');if(save){const s=structures.find(q=>q.id===save.dataset.savePin);if(s)saveWaypoint($('pinWaypointName').value,s.x,s.z);return;}
  const del=e.target.closest('[data-delete-waypoint]');if(del){deleteWaypoint(del.dataset.deleteWaypoint);return;}
- const waypoint=e.target.closest('[data-goto-waypoint]');if(waypoint){const s=visibleWaypoints().find(q=>q.id===waypoint.dataset.gotoWaypoint);if(s){selectStructure(s);animateTo(s.x,s.z);if(innerWidth<=760)setLayersOpen(false);}return;}
- const biomeGo=e.target.closest('[data-goto-biome]');if(biomeGo&&biomeSearchResult){animateTo(biomeSearchResult.x,biomeSearchResult.z);if(innerWidth<=760)setLayersOpen(false);return;}
+ const waypoint=e.target.closest('[data-goto-waypoint]');if(waypoint){const s=visibleWaypoints().find(q=>q.id===waypoint.dataset.gotoWaypoint);if(s){selectStructure(s);animateTo(s.x,s.z);if(isCompactUI())setLayersOpen(false);}return;}
+ const biomeGo=e.target.closest('[data-goto-biome]');if(biomeGo&&biomeSearchResult){animateTo(biomeSearchResult.x,biomeSearchResult.z);if(isCompactUI())setLayersOpen(false);return;}
  const cp=e.target.closest('[data-copy]');
  if(cp){const y=$('tpY').value.trim(),parts=cp.dataset.copy.split(' ');if(!/^(?:~(?:[+-]?\d+)?|[+-]?\d+)$/.test(y)){toast('Teleport Y: enter ~, ~10, or a whole number');$('tpY').focus();return;}copyText('/tp @s '+parts[0]+' '+y+' '+parts[1]);return;}
  const go=e.target.closest('[data-goto]');
- if(go){const s=structures.find(q=>q.id===go.dataset.goto);if(s){selectStructure(s);animateTo(s.x,s.z);if(window.innerWidth<=760)setLayersOpen(false);}return;}
+ if(go){const s=structures.find(q=>q.id===go.dataset.goto);if(s){selectStructure(s);animateTo(s.x,s.z);if(isCompactUI())setLayersOpen(false);}return;}
  const ce=e.target.closest('[data-center]');
  if(ce){const s=structures.find(q=>q.id===ce.dataset.center);if(s)animateTo(s.x,s.z);return;}
  if(e.target.closest('[data-close]')){closeDetail();return;}
@@ -1544,7 +1597,7 @@ $('shareBtn').onclick=()=>{
  copyText(u);
 };
 $('findBtn').onclick=findNearest;
-$('jumpBtn').onclick=()=>{const xv=$('jumpX').value.trim(),zv=$('jumpZ').value.trim();if(!/^-?\d+$/.test(xv)||!/^-?\d+$/.test(zv)){toast('Enter whole-number X and Z coordinates');return;}const x=Number(xv),z=Number(zv);if(!Number.isSafeInteger(x)||!Number.isSafeInteger(z)||Math.abs(x)>MAX_COORD||Math.abs(z)>MAX_COORD){toast('Coordinates must be within ±100,000,000');return;}st.cam.x=x;st.cam.z=z;setLayersOpen(false);generateCurrentRegion();if(innerWidth<=760)$('mapArea').scrollIntoView({block:'start'});};
+$('jumpBtn').onclick=()=>{const xv=$('jumpX').value.trim(),zv=$('jumpZ').value.trim();if(!/^-?\d+$/.test(xv)||!/^-?\d+$/.test(zv)){toast('Enter whole-number X and Z coordinates');return;}const x=Number(xv),z=Number(zv);if(!Number.isSafeInteger(x)||!Number.isSafeInteger(z)||Math.abs(x)>MAX_COORD||Math.abs(z)>MAX_COORD){toast('Coordinates must be within ±100,000,000');return;}st.cam.x=x;st.cam.z=z;setLayersOpen(false);generateCurrentRegion();if(isCompactUI())$('mapArea').scrollIntoView({block:'start'});};
 $('resetLayers').onclick=()=>{applyFocus('all');st.selected=null;renderSidebar();render();drawMinimap();toast('All layers enabled');};
 $('biomesChk').onchange=e=>{st.biomes=e.target.checked;render();};
 $('opacity').oninput=e=>{st.opacity=e.target.value/100;$('opacityVal').textContent=e.target.value+'%';render();};
