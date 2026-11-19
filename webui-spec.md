@@ -1,0 +1,21 @@
+# EZseed — current build
+
+## Interface
+Single-file, offline-capable seed-map site branded EZseed, built by 𝙴𝚅𝙾𝚁𝙴𝚉. Landing app cards open one shared workspace with biome and structure layers, dimensions, search, minimap, map pan/zoom, coordinate jump, sharing and teleport commands. High-contrast two-tone gridlines and outlined coordinate labels improve readability over light and dark biomes. Desktop has a sidebar; mobile has a Layers sheet and normal page scrolling over the map unless **Move map** is enabled. The map controls include a full-screen toggle: it uses browser fullscreen when available and a viewport-filling fallback otherwise; touch map movement is enabled while entering and restored on exit. Light Nexa-inspired design is default; AMOLED dark mode is optional and persistent. Headings use bold Times New Roman with local serif fallbacks; other interface text remains sans-serif or monospaced. Version menus have a subtle glossy/blurred appearance. Custom pixel art is embedded. The creator and footer retain 𝙴𝚅𝙾𝚁𝙴𝚉 branding and Telegram/GitHub links.
+
+## World generation
+- Java: Cubitect/cubiomes commit `e61f90580cbdd883214a8054670dacae655e59c0` (MIT); 1.18.2, 1.19.2, 1.19.4, 1.20.6, 1.21.1, 1.21.3, 1.21.4.
+- Bedrock: FragrantResult186/cubiomes-bedrock fork commit `294c72ab0392dd818a91d293dbd5774d4874d64b` (MIT); 1.18.0, 1.19.0, 1.20.0, 1.21.0, 1.21.50, 1.21.60. **Experimental:** results and structures have not been validated against Minecraft or Bedrock Dedicated Server. Verify in-game.
+- Both C bridges, source, build scripts, licenses and WASM files are in `worldgen/`. Both WASM binaries are embedded in `index.html`; no remote requests are needed for map generation. Java native Cubiomes and WASM biome samples and village counts were compared for two seeds; Bedrock native fork and WASM samples and village counts were likewise compared. These are implementation consistency checks, not evidence of in-game accuracy.
+- Numeric seeds use signed 64-bit parsing. Non-numeric text uses Java-style string hashing; Bedrock text-seed behavior is not independently verified. Use the numeric world seed when possible.
+- The overview covers a moving 8,192 × 8,192-block region, resampled around the camera while panning. Coordinate jump accepts X/Z from −100,000,000 to +100,000,000 (beyond Minecraft’s normal ~30 million-block border results are experimental and not representative of playable worlds). Coordinates, version, seed and dimension are included in share links. Nearest finder searches enabled structures in the **loaded region only**, within the chosen radius, measured from world origin or map center.
+- Biomes render progressively in camera-centered tiles without a blocking generation screen, with a circular non-interactive progress indicator and a subtle glossy inset glow around the map. Actual calculation time depends on device and structures can appear later.
+- Biomes are 16-block samples (4-block samples when zoomed in), at a fixed height; the map is not a physical terrain/height map. End terrain is not rendered. Structure markers are biome-checked predictions, not guarantees; generation and terrain can differ, and historical/modified worlds may not match. Java has additional End City/mansion terrain checks. Java strongholds are limited to the first 34 near origin and up to 128 farther out. Bedrock strongholds are fork-derived candidates. Spawn is approximate. Teleport commands default to relative Y (`~`, current player height); users can set a numeric or relative Y in Layers. This is not a safety guarantee: check the destination terrain in-game.
+- Java slime chunks use seed-dependent calculation; the Bedrock fork uses seed-independent chunk calculation. Neither guarantees actual slime spawning conditions.
+
+## Files
+- `index.html` — self-contained app (inline CSS, JS, embedded images and WASM).
+- `dist/index.html` — copy for static deployment; `ezseed.zip` contains this file at ZIP root for Netlify Drop.
+- `deploy/index.html` — another deployment copy.
+- `DEPLOY.md` — live Vercel URL and free hosting/update directions.
+- `assets/` — original embedded branding assets; `worldgen/` — generator sources, build scripts, WASM and licenses.
