@@ -595,6 +595,15 @@ body[data-mode="dark"] .theme-options button{background:rgba(30,29,37,.56)}
 #terrain3DStatus{top:16px;left:50%;transform:translateX(-50%);z-index:4;max-width:min(450px,calc(100% - 200px));padding:9px 12px;border-radius:999px;background:rgba(255,255,255,.88);border:1px solid var(--line);color:#28253a;font-size:11px;font-weight:700;text-align:center;pointer-events:none;backdrop-filter:blur(12px)}
 #terrain3DStatus[hidden]{display:none}#mapArea.view3d #mapCanvas,#mapArea.view3d #coords,#mapArea.view3d #scalebar,#mapArea.view3d #mapTouchMode,#mapArea.view3d #pinTip,#mapArea.view3d #detailCard{display:none}
 #mapArea.view3d #minimap{pointer-events:none}#mapArea.view3d #loading{top:58px}
+#terrainAreaControl{left:16px;bottom:72px;z-index:4;display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:5px 8px 5px 12px;background:var(--surface);color:var(--ink);box-shadow:var(--shadow);font-size:11px;font-weight:800}
+#terrainAreaControl[hidden],#terrainMove[hidden]{display:none}
+#terrainAreaControl select{border:0;border-radius:999px;padding:6px 22px 6px 8px;color:var(--ink);background:var(--surface2);font:inherit;max-width:158px;cursor:pointer}
+#terrainMove{right:16px;bottom:16px;z-index:4;display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,44px);gap:2px;filter:drop-shadow(0 3px 7px rgba(20,18,40,.16))}
+#terrainMove button{border:1px solid var(--line);border-radius:50%;background:var(--surface);color:var(--ink);font-size:18px;font-weight:800;cursor:pointer;touch-action:manipulation}
+#terrainMove button:hover{background:var(--surface2)}
+#terrainMove [data-direction="north"]{grid-column:2;grid-row:1}#terrainMove [data-direction="west"]{grid-column:1;grid-row:2}#terrainMove [data-direction="south"]{grid-column:2;grid-row:2}#terrainMove [data-direction="east"]{grid-column:3;grid-row:2}
+@media(max-width:760px){#terrainAreaControl{left:10px;bottom:64px}#terrainMove{right:10px;bottom:10px}}
+
 @media(max-width:760px){#toggle3D{top:62px;left:10px;min-height:44px}#mapArea.view3d #toggle3D{top:10px}#terrain3DStatus{top:62px;left:10px;transform:none;max-width:min(310px,calc(100% - 82px));font-size:10px}#mapArea.view3d #loading{top:110px}}
 @media(min-width:761px) and (max-width:932px) and (orientation:landscape) and (pointer:coarse){#toggle3D{top:62px;left:10px;min-height:44px}#mapArea.view3d #toggle3D{top:10px}#terrain3DStatus{top:62px;left:10px;transform:none;max-width:310px;font-size:10px}}
 </style>
@@ -822,7 +831,7 @@ body[data-mode="dark"] .theme-options button{background:rgba(30,29,37,.56)}
         <div class="results" id="results"><div class="empty">Hit “Find nearest” to list the closest enabled structures.</div></div>
       </div>
 
-      <div class="note"><b>Java &amp; Bedrock.</b> Pan or jump to explore new regions. Biomes are sampled; the optional 3D Overworld is a block-style approximation using 8-block samples, not exact Minecraft blocks. End terrain is not shown. Beyond the normal ~30M world border results are experimental. Structures are predictions; terrain can prevent generation. Bedrock results are experimental. Spawn is approximate; /tp Y is adjustable.</div>
+      <div class="note"><b>Java &amp; Bedrock.</b> Pan or jump to explore new regions. Biomes are sampled; the optional 3D Overworld is a block-style approximation using 8–32 block samples, not exact Minecraft blocks. End terrain is not shown. Beyond the normal ~30M world border results are experimental. Structures are predictions; terrain can prevent generation. Bedrock results are experimental. Spawn is approximate; /tp Y is adjustable.</div>
     </aside>
 
     <button id="sheetBackdrop" aria-label="Close layers" tabindex="-1"></button>
@@ -831,6 +840,10 @@ body[data-mode="dark"] .theme-options button{background:rgba(30,29,37,.56)}
       <canvas id="terrain3DCanvas" aria-label="Approximate 3D terrain preview; drag to rotate" aria-hidden="true" hidden></canvas>
       <button class="btn overlay" id="toggle3D" type="button" aria-pressed="false" title="Open approximate 3D terrain">3D view</button>
       <div id="terrain3DStatus" class="overlay" role="status" aria-live="polite" hidden>Approximate surface</div>
+      <label id="terrainAreaControl" class="overlay" hidden>Area <select id="terrainArea" aria-label="3D preview area"><option value="8">1K · more detail</option><option value="16">2K · larger</option><option value="32">4K · widest</option></select></label>
+      <div id="terrainMove" class="overlay" role="group" aria-label="Move 3D preview to a nearby region" hidden>
+        <button type="button" data-direction="north" aria-label="Move north" title="Move north">↑</button><button type="button" data-direction="west" aria-label="Move west" title="Move west">←</button><button type="button" data-direction="south" aria-label="Move south" title="Move south">↓</button><button type="button" data-direction="east" aria-label="Move east" title="Move east">→</button>
+      </div>
       <button id="mapTouchMode" class="map-touch-mode overlay" aria-pressed="false">Move map</button>
       <div id="pinTip" class="overlay glass"></div>
       <div id="detailCard" class="overlay glass"></div>
@@ -1497,7 +1510,7 @@ function heroLoop(){if(st.view==='landing')drawHero();}
 
 /* Seed-derived 3D surface preview. Heights are approximations, not block terrain. */
 const terrainCanvas=$('terrain3DCanvas');
-let terrainGL=null,terrainProgram=null,terrainBuffers=null,terrainView=false,terrainWorker=null,terrainFallback=null,terrainWatchdog=0,terrainJob=0,terrainYaw=.72,terrainPitch=.76,terrainDistance=820,terrainData=null;
+let terrainGL=null,terrainProgram=null,terrainBuffers=null,terrainView=false,terrainWorker=null,terrainFallback=null,terrainWatchdog=0,terrainJob=0,terrainYaw=.72,terrainPitch=.76,terrainDistance=1600,terrainData=null;
 function terrainWorkerMain(){
  self.onmessage=async e=>{try{const m=e.data,wasi=new Proxy({}, {get:()=>()=>0});const result=await WebAssembly.instantiate(m.module,{wasi_snapshot_preview1:wasi});const g=result.exports||result.instance.exports;g._initialize();g.engine_init(m.version,m.lo,m.hi,0);
  const n=m.n,count=n*n,hp=g.engine_alloc(count*4),ip=g.engine_alloc(count*4);if(!hp||!ip)throw Error('Memory allocation failed');
@@ -1561,7 +1574,7 @@ function terrainLookAt(eye){
  return new Float32Array([x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-(x[0]*eye[0]+x[1]*eye[1]+x[2]*eye[2]),-(y[0]*eye[0]+y[1]*eye[1]+y[2]*eye[2]),-(z[0]*eye[0]+z[1]*eye[1]+z[2]*eye[2]),1]);
 }
 function uploadTerrain(data){
- // Each visible cell is a coarse 8×8 sample, not an actual Minecraft block.
+ // Each visible cell represents a coarse sample, not an actual Minecraft block.
  // Quantised heights and separate flat faces give the approximation a blocky look.
  const gl=terrainGL,n=data.n,heights=new Float32Array(data.heights),ids=new Int32Array(data.ids),count=n*n,displayHeights=new Float32Array(count),water=new Uint8Array(count),biomes=new Array(count);
  for(let i=0;i<count;i++){
@@ -1596,15 +1609,15 @@ function renderTerrain(){
  if(!terrainView||!terrainGL)return;const gl=terrainGL,r=terrainCanvas.getBoundingClientRect();if(!r.width||!r.height)return;const ratio=Math.min(window.devicePixelRatio||1,matchMedia('(pointer: coarse)').matches?1.5:2),w=Math.max(1,Math.round(r.width*ratio)),h=Math.max(1,Math.round(r.height*ratio));if(terrainCanvas.width!==w||terrainCanvas.height!==h){terrainCanvas.width=w;terrainCanvas.height=h;}
  gl.viewport(0,0,w,h);gl.clearColor(.72,.81,.87,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);if(!terrainBuffers.count)return;gl.useProgram(terrainProgram);
  const eye=[Math.sin(terrainYaw)*Math.cos(terrainPitch)*terrainDistance,Math.sin(terrainPitch)*terrainDistance,Math.cos(terrainYaw)*Math.cos(terrainPitch)*terrainDistance];
- gl.uniformMatrix4fv(gl.getUniformLocation(terrainProgram,'uView'),false,terrainLookAt(eye));gl.uniformMatrix4fv(gl.getUniformLocation(terrainProgram,'uProjection'),false,terrainPerspective(Math.PI/4,w/h,5,15000));
+ gl.uniformMatrix4fv(gl.getUniformLocation(terrainProgram,'uView'),false,terrainLookAt(eye));gl.uniformMatrix4fv(gl.getUniformLocation(terrainProgram,'uProjection'),false,terrainPerspective(Math.PI/4,w/h,5,30000));
  for(const [name,buffer,size] of [['aPosition',terrainBuffers.position,3],['aColor',terrainBuffers.color,3],['aFace',terrainBuffers.face,1]]){let loc=gl.getAttribLocation(terrainProgram,name);gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,size,gl.FLOAT,false,0,0);}
  gl.drawArrays(gl.TRIANGLES,0,terrainBuffers.count);
 }
 function scheduleTerrain(){
  if(!terrainView||st.view!=='workspace'||st.dim!=='overworld'||!terrainGL)return;
- stopTerrainWorker();const job=++terrainJob,n=65,step=8,x=Math.floor((st.cam.x-(n-1)*step/2)/step)*step,z=Math.floor((st.cam.z-(n-1)*step/2)/step)*step;
+ stopTerrainWorker();const job=++terrainJob,n=128,step=Number($('terrainArea').value),x=Math.floor((st.cam.x-(n-1)*step/2)/step)*step,z=Math.floor((st.cam.z-(n-1)*step/2)/step)*step;
  terrainData=null;terrainBuffers.count=0;$('terrain3DStatus').textContent='Generating approximate 3D terrain…';renderTerrain();
- const done=data=>{if(!terrainView||job!==terrainJob)return;stopTerrainWorker();if(data.error){$('terrain3DStatus').textContent='3D could not load on this device. Switch to 2D, then try again.';return;}try{uploadTerrain(data);$('terrain3DStatus').textContent='Block-style preview · approximate, 8-block samples'+(currentEdition==='bedrock'?' · Bedrock experimental':'')+' · drag to rotate · + / − to zoom';renderTerrain();}catch(err){console.warn('3D rendering failed:',err);$('terrain3DStatus').textContent='3D could not render on this device. Switch to 2D, then try again.';}};
+ const done=data=>{if(!terrainView||job!==terrainJob)return;stopTerrainWorker();if(data.error){$('terrain3DStatus').textContent='3D could not load on this device. Switch to 2D, then try again.';return;}try{uploadTerrain(data);$('terrain3DStatus').textContent='Block-style preview · approximate, '+step+'-block samples'+(currentEdition==='bedrock'?' · Bedrock experimental':'')+' · drag to rotate · + / − to zoom';renderTerrain();}catch(err){console.warn('3D rendering failed:',err);$('terrain3DStatus').textContent='3D could not render on this device. Switch to 2D, then try again.';}};
  const message={module:engineModules[currentEdition],version:engineVersion,lo:Number(seedBits&0xffffffffn),hi:Number((seedBits>>32n)&0xffffffffn),n,step,x,z};
  let url;
  try{
@@ -1624,15 +1637,23 @@ function setTerrainView(on){
  if(on&&st.dim!=='overworld'){toast('3D preview is available in the Overworld only');return;}
  if(on&&!initTerrainGL()){toast('3D needs WebGL; use 2D on this device');return;}
  terrainView=on;stopFling();closeDetail();hideTip();$('mapArea').classList.toggle('view3d',on);$('toggle3D').setAttribute('aria-pressed',String(on));$('toggle3D').textContent=on?'2D map':'3D view';$('toggle3D').title=on?'Switch to 2D map':'Open approximate 3D terrain';
- terrainCanvas.hidden=!on;$('terrain3DStatus').hidden=!on;terrainCanvas.setAttribute('aria-hidden',String(!on));if(on){setLayersOpen(false);scheduleTerrain();}else{terrainJob++;stopTerrainWorker();requestAnimationFrame(()=>{resizeMap();render();drawMinimap();});}
+ terrainCanvas.hidden=!on;$('terrain3DStatus').hidden=!on;$('terrainAreaControl').hidden=!on;$('terrainMove').hidden=!on;terrainCanvas.setAttribute('aria-hidden',String(!on));if(on){setLayersOpen(false);scheduleTerrain();}else{terrainJob++;stopTerrainWorker();requestAnimationFrame(()=>{resizeMap();render();drawMinimap();});}
 }
 $('toggle3D').onclick=()=>setTerrainView(!terrainView);
+$('terrainArea').onchange=()=>{terrainDistance=1600*Number($('terrainArea').value)/8;scheduleTerrain();};
+$('terrainMove').onclick=e=>{
+ const b=e.target.closest('[data-direction]');if(!b||!terrainView)return;
+ const amount=Number($('terrainArea').value)*96,dir=b.dataset.direction;
+ st.cam.x=Math.max(-MAX_COORD,Math.min(MAX_COORD,st.cam.x+(dir==='east'?amount:dir==='west'?-amount:0)));
+ st.cam.z=Math.max(-MAX_COORD,Math.min(MAX_COORD,st.cam.z+(dir==='south'?amount:dir==='north'?-amount:0)));
+ generateCurrentRegion();scheduleTerrain();drawMinimap();
+};
 let orbitPointer=null;
 terrainCanvas.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button!==0)return;orbitPointer={id:e.pointerId,x:e.clientX,y:e.clientY};terrainCanvas.setPointerCapture(e.pointerId);});
 terrainCanvas.addEventListener('pointermove',e=>{if(!orbitPointer||orbitPointer.id!==e.pointerId)return;const dx=e.clientX-orbitPointer.x,dy=e.clientY-orbitPointer.y;orbitPointer.x=e.clientX;orbitPointer.y=e.clientY;terrainYaw-=dx*.008;terrainPitch=Math.max(.2,Math.min(1.38,terrainPitch+dy*.006));renderTerrain();});
 function terrainPointerEnd(e){if(orbitPointer&&orbitPointer.id===e.pointerId)orbitPointer=null;}
 terrainCanvas.addEventListener('pointerup',terrainPointerEnd);terrainCanvas.addEventListener('pointercancel',terrainPointerEnd);
-terrainCanvas.addEventListener('wheel',e=>{e.preventDefault();terrainDistance=Math.max(200,Math.min(1800,terrainDistance*Math.exp(e.deltaY*.001)));renderTerrain();},{passive:false});
+terrainCanvas.addEventListener('wheel',e=>{e.preventDefault();terrainDistance=Math.max(200,Math.min(9000,terrainDistance*Math.exp(e.deltaY*.001)));renderTerrain();},{passive:false});
 window.addEventListener('resize',()=>{if(terrainView)requestAnimationFrame(renderTerrain);});
 if(window.ResizeObserver)new ResizeObserver(()=>{if(terrainView)requestAnimationFrame(renderTerrain);}).observe($('mapArea'));
 
@@ -1918,9 +1939,9 @@ document.addEventListener('click',e=>{
  if(e.target.closest('#mobileLayers')){setLayersOpen(!document.body.classList.contains('side-open'));return;}
  if(e.target.closest('#closeLayers, #sheetBackdrop')){setLayersOpen(false);return;}
 });
-function onZoom(f){if(terrainView){terrainDistance=Math.max(200,Math.min(1800,terrainDistance/f));renderTerrain();return;}zoomAt(f,W/2,H/2);}
+function onZoom(f){if(terrainView){terrainDistance=Math.max(200,Math.min(9000,terrainDistance/f));renderTerrain();return;}zoomAt(f,W/2,H/2);}
 $('zIn').onclick=()=>onZoom(1.45);$('zOut').onclick=()=>onZoom(1/1.45);
-$('zHome').onclick=()=>{if(terrainView){terrainYaw=.72;terrainPitch=.76;terrainDistance=820;renderTerrain();return;}animateTo(0,0);st.scale=Math.max(.30,minMapScale());render();drawMinimap();};
+$('zHome').onclick=()=>{if(terrainView){terrainYaw=.72;terrainPitch=.76;terrainDistance=1600*Number($('terrainArea').value)/8;renderTerrain();return;}animateTo(0,0);st.scale=Math.max(.30,minMapScale());render();drawMinimap();};
 $('randBtn').onclick=()=>{setSeed(String(Math.floor(Math.random()*9e9)+1e9),true);toast('New seed: '+seedText);};
 $('shareBtn').onclick=()=>{
  let u='';
