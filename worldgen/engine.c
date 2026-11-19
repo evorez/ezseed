@@ -18,3 +18,15 @@ int engine_strongholds(int*out,int count){StrongholdIter it;initFirstStronghold(
 void engine_spawn(int*out){Pos p=getSpawn(&gen);out[0]=p.x;out[1]=p.z;}
 int engine_slime(int x,int z){return isSlimeChunk(seed,x,z);}
 void *engine_alloc(int n){return malloc(n);} void engine_free(void*p){free(p);}
+
+// Seed-derived approximate Overworld surface (not exact block terrain).
+int engine_height_samples(int x, int z, int step, int n, float *out, int *ids) {
+    if (dimension != DIM_OVERWORLD || n < 1 || n > 128 || step < 4 || step % 4 != 0) return 1;
+    for (int j = 0; j < n; ++j) for (int i = 0; i < n; ++i) {
+        int xx = x + i*step, zz = z + j*step; float height;
+        int rc=mapApproxHeight(&height, 0, &gen, 0, (int)floor((double)xx/4), (int)floor((double)zz/4), 1, 1);
+        if (rc) return rc;
+        out[j*n+i]=height; ids[j*n+i]=engine_biome_at(xx,zz);
+    }
+    return 0;
+}
