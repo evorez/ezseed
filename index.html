@@ -490,7 +490,7 @@ body[data-mode="dark"] .hero-copy .under{color:#ff5268}
  #scalebar{bottom:calc(max(10px,env(safe-area-inset-bottom)) + 108px)}
 }
 /* Rounded, grouped map controls for touch and pointer users. */
-#mapArea{--map-right:16px;--overview-size:150px}
+#mapArea{--map-right:16px;--overview-size:150px;--overview-top:16px}
 #mapArea:fullscreen,body.map-fullscreen-fallback #mapArea{--map-right:max(16px,env(safe-area-inset-right))}
 #zoomStack{align-items:center;gap:8px}
 #zoomStack .zoom-pill{display:flex;flex-direction:column;align-items:center;padding:3px;border:1px solid var(--line);border-radius:999px;background:var(--surface);box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.62)}
@@ -504,15 +504,15 @@ body[data-mode="dark"] .hero-copy .under{color:#ff5268}
  #mapArea{--map-right:max(10px,env(safe-area-inset-right))}
  #zoomStack .zoom-pill .iconbtn{width:44px;height:44px;flex-basis:44px}
 }
-/* Landscape keeps overview in the top-right and moves tools alongside it. */
+/* In landscape the horizontal pill sits beneath the top-right overview. */
 @media(orientation:landscape){
- #mapArea #minimapWrap{display:block;top:16px;right:var(--map-right);bottom:auto}
- #mapArea #zoomStack,#mapArea:fullscreen #zoomStack,body.map-fullscreen-fallback #zoomStack{top:16px;right:calc(var(--map-right) + var(--overview-size) + 28px);transform:none}
+ #mapArea #minimapWrap{display:block;top:var(--overview-top);right:var(--map-right);bottom:auto}
+ #mapArea #zoomStack,#mapArea:fullscreen #zoomStack,body.map-fullscreen-fallback #zoomStack{top:calc(var(--overview-top) + var(--overview-size) + 45px);right:var(--map-right);transform:none}
+ #zoomStack .zoom-pill{flex-direction:row}
+ #zoomStack .zoom-divider{width:1px;height:23px}
 }
 @media(orientation:landscape) and (max-width:900px){
- #mapArea{--overview-size:120px}
- #mapArea #minimapWrap{top:10px}
- #mapArea #zoomStack,#mapArea:fullscreen #zoomStack,body.map-fullscreen-fallback #zoomStack{top:10px}
+ #mapArea{--overview-size:120px;--overview-top:10px}
 }
 /* Touch-sized zoom controls on phones and tablets, even when rotated. */
 @media(pointer:coarse){
@@ -802,7 +802,7 @@ $('navArrow').innerHTML=svg('arrow',14); $('heroArrow').innerHTML=svg('arrow',14
 $('backBtn').innerHTML=svg('back',15); $('randBtn').innerHTML=svg('dice',15);
 $('mobileLayers').innerHTML=svg('layers',15); $('searchIcon').innerHTML=svg('search',14);
 $('findIcon').innerHTML=svg('locate',14);
-$('zoomStack').innerHTML='<div class="zoom-pill" role="group" aria-label="Zoom controls"><button class="iconbtn" id="zIn" title="Zoom in" aria-label="Zoom in">'+svg('plus',17)+'</button><span class="zoom-divider" aria-hidden="true"></span><button class="iconbtn" id="zOut" title="Zoom out" aria-label="Zoom out">'+svg('minus',17)+'</button></div><button class="iconbtn" id="zHome" title="Recenter on origin" aria-label="Recenter on origin">'+svg('cross',17)+'</button><button class="iconbtn" id="mapFullscreen" type="button" title="Full screen map" aria-label="Full screen map" aria-pressed="false">'+svg('expand',17)+'</button>';
+$('zoomStack').innerHTML='<div class="zoom-pill" role="group" aria-label="Map controls"><button class="iconbtn" id="zIn" title="Zoom in" aria-label="Zoom in">'+svg('plus',17)+'</button><span class="zoom-divider" aria-hidden="true"></span><button class="iconbtn" id="zOut" title="Zoom out" aria-label="Zoom out">'+svg('minus',17)+'</button><span class="zoom-divider" aria-hidden="true"></span><button class="iconbtn" id="zHome" title="Recenter on origin" aria-label="Recenter on origin">'+svg('cross',17)+'</button><span class="zoom-divider" aria-hidden="true"></span><button class="iconbtn" id="mapFullscreen" type="button" title="Full screen map" aria-label="Full screen map" aria-pressed="false">'+svg('expand',17)+'</button></div>';
 
 /* ============================ config ============================ */
 const WORLD=8192, HALF=4096, MAX_COORD=100000000;
