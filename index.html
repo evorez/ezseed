@@ -585,6 +585,10 @@ body[data-mode="dark"] .theme-options button{background:rgba(30,29,37,.56)}
 @media(max-width:1175px){.nav .nav-links{display:none}.nav .theme-picker{margin-left:auto}}
 @media(max-width:760px){.nav .nav-social{display:flex}.nav .nav-social .iconbtn{width:36px;height:36px;flex-basis:36px}.nav .theme-picker{margin-left:auto}}
 @media(max-width:500px){.nav .nav-open-label{display:none}.nav #navOpen{width:44px;height:44px;justify-content:center;padding:0}.nav #navArrow{display:flex}}
+
+.seed-samples{margin:0 0 62px}.sample-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}.sample-card{display:flex;flex-direction:column;gap:9px;text-align:left;padding:20px;border-radius:28px;color:var(--ink);min-width:0}.sample-card b{font-size:15px}.sample-card span{font-family:var(--mono);font-size:12px;overflow-wrap:anywhere;color:var(--muted)}.sample-card small{font-size:11px;color:var(--accent);font-weight:750}.sample-card:hover{border-color:var(--accent)}
+@media(max-width:760px){.sample-grid{grid-template-columns:1fr}.seed-samples{margin-bottom:38px}}
+.measure-status{color:var(--muted);font-size:12px;line-height:1.5;margin-top:8px}
 </style>
 </head>
 <body data-view="landing">
@@ -648,6 +652,15 @@ body[data-mode="dark"] .theme-options button{background:rgba(30,29,37,.56)}
     <span><i></i> Java &amp; Bedrock</span><span><i></i> Select your version</span>
     <span><i></i> 3 dimensions</span><span><i></i> 10 structure layers</span><span><i></i> Powered by Cubiomes</span>
   </div>
+
+  <section id="seedSamples" class="seed-samples">
+    <div class="section-head"><div><h2>Seeds to explore</h2><p>Try a sample seed, then explore it in your selected version.</p></div></div>
+    <div class="sample-grid">
+      <button type="button" class="glass sample-card" data-sample-seed="12345"><b>First adventure</b><span>12345</span><small>Open in map →</small></button>
+      <button type="button" class="glass sample-card" data-sample-seed="8675309"><b>Fresh world</b><span>8675309</span><small>Open in map →</small></button>
+      <button type="button" class="glass sample-card" data-sample-seed="-9065479248748140566"><b>New discoveries</b><span>−9065479248748140566</span><small>Open in map →</small></button>
+    </div>
+  </section>
 
   <section id="apps">
     <div class="section-head">
@@ -762,10 +775,26 @@ body[data-mode="dark"] .theme-options button{background:rgba(30,29,37,.56)}
         <div id="portalResult" class="empty" aria-live="polite">Enter whole block coordinates. Portal linking may land nearby.</div>
         <button class="btn findbtn" type="button" id="portalGo" hidden>Go to converted location</button>
       </div>
+      <div class="group" id="measureGroup">
+        <h4>Measure distance</h4><div class="utility-actions"><button class="btn" id="measureToggle" type="button" aria-pressed="false">Start measuring</button><button class="btn" id="measureClear" type="button">Clear</button></div>
+        <div class="measure-status" id="measureStatus" aria-live="polite">Select two points on the map to measure horizontal distance.</div>
+      </div>
+      <div class="group" id="seedSearchGroup">
+        <h4>Seed finder</h4><div class="empty">Search random seeds for structures near origin. Structure predictions may differ in-game; Bedrock is experimental.</div>
+        <label class="sub">Structure<select class="utility-field" id="seedSearchType"><option value="village">Village</option><option value="outpost">Pillager outpost</option><option value="trial">Trial chamber</option><option value="ancient">Ancient city</option><option value="mansion">Woodland mansion</option></select></label>
+        <div class="coordinate-jump"><label>Radius (blocks)<input id="seedSearchRadius" type="number" min="128" max="3000" step="1" value="1000"></label><label>Minimum count<input id="seedSearchCount" type="number" min="1" max="10" step="1" value="1"></label></div>
+        <div class="utility-actions"><button class="btn" id="seedSearchStart" type="button">Start</button><button class="btn" id="seedSearchStop" type="button">Stop</button></div>
+        <div id="seedSearchStatus" class="empty" aria-live="polite">Search runs on this device in the background.</div><div id="seedSearchResults" class="results"></div>
+      </div>
+      <div class="group" id="savedSeedsGroup"><h4>Saved seeds <span id="savedSeedCount">0</span></h4><div class="utility-row"><input class="utility-field" id="savedSeedName" maxlength="40" placeholder="Name (optional)" aria-label="Saved seed name"><button class="btn" id="saveSeed" type="button">Save seed</button></div><div class="empty">Stored on this device; includes edition and version.</div><div id="savedSeedList" class="results"></div></div>
+      <div class="group"><details><summary>Keyboard shortcuts</summary><div class="empty">+ / − zoom · arrow keys pan · G grid · M measure · Escape close panels</div></details></div>
+      <div class="group" id="seedSummaryGroup"><h4>Seed summary</h4><button class="btn" id="seedSummary" type="button">Summarize loaded area</button><div id="seedSummaryResult" class="empty" aria-live="polite">Counts predicted structures in the loaded region. This is not an official quality score.</div></div>
       <div class="group" id="biomeFinderGroup">
         <h4>Biome finder</h4>
         <div class="utility-row"><input class="utility-field" id="biomeQuery" type="search" list="biomeSuggestions" placeholder="e.g. Cherry Grove" aria-label="Biome name"><datalist id="biomeSuggestions"></datalist><button class="btn" type="button" id="biomeFind">Find</button></div>
         <div class="empty">Uses the radius and origin in Nearest finder below. Searches the loaded 8,192 × 8,192 region; results are approximate. Pan to search elsewhere.</div>
+        <div class="utility-actions"><button class="btn" type="button" id="biomeHighlight">Highlight</button><button class="btn" type="button" id="biomeHighlightClear">Clear highlight</button></div>
+        <div class="empty">Highlight uses the 16-block overview sample; boundaries are approximate.</div>
         <div id="biomeResult" class="results" aria-live="polite"></div>
       </div>
       <div class="group">
@@ -1002,7 +1031,7 @@ function biomeById(id){
 function biomeAt(wx,wz){return biomeById(engine.engine_biome_at(Math.floor(wx),Math.floor(wz)));}
 function rgbCss(c){return 'rgb('+c.rgb.join(',')+')';}
 let texture=null,heroTexture=null,genToken=0,texOriginX=-HALF,texOriginZ=-HALF,recenterTimer=0;
-let overviewIds=null,overviewComplete=false,biomeSearchToken=0,biomeSearchResult=null;
+let overviewIds=null,overviewComplete=false,biomeSearchToken=0,biomeSearchResult=null,highlightIds=null,highlightCanvas=null,highlightWorld=null;
 let strongholdCache={key:"",count:0,points:[]};
 let strongholdWorker=null;
 // Strongholds can take hundreds of milliseconds; calculate them in an isolated worker.
@@ -1057,7 +1086,7 @@ function biomeTileWorkerMain(){
 }
 let detailTexture=null,detailTimer=0,detailToken=0,pendingDetailKey="";
 function buildTextureAsync(dim,done,originX,originZ){
- stopBiomeWorkers();const token=++genToken,size=512,scale=16,tileSize=32,cv=document.createElement('canvas');cv.width=cv.height=size;
+ stopBiomeWorkers();highlightCanvas=null;const token=++genToken,size=512,scale=16,tileSize=32,cv=document.createElement('canvas');cv.width=cv.height=size;
  const cx=cv.getContext('2d'),img=cx.createImageData(size,size);observedBiomes=new Map();overviewIds=new Int32Array(size*size);overviewIds.fill(-1);overviewComplete=false;biomeSearchToken++;biomeSearchResult=null;$('biomeResult').textContent='';
  // Sample nearby tiles first: biomes spread out in a circle instead of horizontal strips.
  const cameraX=Math.max(0,Math.min(size-1,(st.cam.x-originX)/scale));
@@ -1078,7 +1107,7 @@ function buildTextureAsync(dim,done,originX,originZ){
  function paint(){
   paintPending=false;if(token!==genToken||finished)return;
   const progress=Math.round(completed/tiles.length*100);loader.style.setProperty('--progress',progress+'%');loader.setAttribute('aria-valuenow',String(progress));render();drawMinimap();
-  if(completed===tiles.length){finished=true;stopBiomeWorkers();overviewComplete=true;updateBiomeSuggestions();if(!heroTexture){heroTexture=cv;drawHero();}setTimeout(()=>{if(token!==genToken)return;try{done&&done();}catch(e){console.error(e);loader.classList.remove('on');toast('World generation failed. Try another seed.');}},0);}
+  if(completed===tiles.length){finished=true;stopBiomeWorkers();overviewComplete=true;updateBiomeSuggestions();rebuildBiomeHighlight();if(!heroTexture){heroTexture=cv;drawHero();}setTimeout(()=>{if(token!==genToken)return;try{done&&done();}catch(e){console.error(e);loader.classList.remove('on');toast('World generation failed. Try another seed.');}},0);}
  }
  function schedulePaint(){if(!paintPending){paintPending=true;requestAnimationFrame(paint);}}
  function serial(){
@@ -1134,7 +1163,7 @@ function generateStructures(dim,originX,originZ){
 }
 /* ============================ state ============================ */
 const st={view:'landing',dim:'overworld',app:'Seed Map',biomes:true,opacity:1,
- layers:{},slime:false,chunkGrid:false,coordGrid:true,origin:'spawn',radius:5000,
+ layers:{},slime:false,chunkGrid:false,coordGrid:true,strongholdRings:false,origin:'spawn',radius:5000,
  cam:{x:0,z:0},scale:.30,selected:null,hover:null,results:[]};
 Object.keys(TYPES).forEach(t=>st.layers[t]=true);
 const MIN=.085,MAX=4.5;
@@ -1147,6 +1176,7 @@ function setSeed(s,regenerate){
  $('heroSeed').value=s;$('seedInput').value=s;
  if(regenerate)loadWorld(true);
 }
+let restoreSharedLayers=new URLSearchParams(location.search).has('layers');
 function openWorkspace(layer,dim){
  if(!engine){toast('Loading world generators…');return;}
  layer=layer||'all';dim=dim||st.dim;
@@ -1154,7 +1184,7 @@ function openWorkspace(layer,dim){
  $('crumbName').textContent=st.app;
  setSeed($('heroSeed').value,false);
  st.dim=dim;syncDims();
- applyFocus(layer);
+ const sharedLayers=restoreSharedLayers&&layer==='all'?{...st.layers}:null;applyFocus(layer);if(sharedLayers)Object.assign(st.layers,sharedLayers);restoreSharedLayers=false;
  document.body.dataset.view='workspace';document.body.classList.remove('side-open');setTouchMode(false);window.scrollTo(0,0);
  requestAnimationFrame(()=>{resizeMap();loadWorld(false);});
 }
@@ -1173,7 +1203,7 @@ function syncDims(){
  $('biomeCount').textContent=observedBiomes.size||'—';
 }
 function loadWorld(force){
- stopFling();
+ stopFling();if(measureDimension!==st.dim){measurePoints=[];measureDimension=st.dim;updateMeasureStatus();}
  const key=seedText+'|'+st.dim+'|'+$('verSel').value;
  if(!force&&key===builtSeed&&texture){renderSidebar();render();requestRecenter();return;}
  builtSeed=key;clearTimeout(recenterTimer);recenterTimer=0;detailToken++;clearTimeout(detailTimer);pendingDetailKey="";detailTexture=null;initGenerator(st.dim);if(st.dim==='overworld'){const p=engine.engine_alloc(8);engine.engine_spawn(p);const a=new Int32Array(engine.memory.buffer,p,2);approxSpawn={x:a[0],z:a[1]};engine.engine_free(p);}
@@ -1218,6 +1248,7 @@ function renderSidebar(){
  }).join('');
  $('overlayRows').innerHTML=
   (st.dim==='overworld'?'<label class="row"><input type="checkbox" data-ov="slime" '+(st.slime?'checked':'')+'><span class="swatch" style="background:rgba(126,231,135,.35);border-color:#7ee787"></span><span class="nm">Slime chunks</span><span class="ct">~10%</span></label>':'')+
+  (st.dim==='overworld'&&currentEdition==='java'?'<label class="row"><input type="checkbox" data-ov="strongholdRings" '+(st.strongholdRings?'checked':'')+'><span class="swatch" style="background:rgba(193,120,255,.25)"></span><span class="nm">Stronghold rings</span><span class="ct">approx.</span></label>':'')+
   '<label class="row"><input type="checkbox" data-ov="chunkGrid" '+(st.chunkGrid?'checked':'')+'><span class="swatch" style="background:rgba(255,255,255,.12)"></span><span class="nm">Chunk grid</span><span class="ct">16×16</span></label>'+
   '<label class="row"><input type="checkbox" data-ov="coordGrid" '+(st.coordGrid?'checked':'')+'><span class="swatch" style="background:rgba(255,255,255,.2)"></span><span class="nm">Coordinate grid</span><span class="ct">auto</span></label>';
  renderWaypoints();
@@ -1285,9 +1316,12 @@ function render(){
   ctx.drawImage(texture,tl.x,tl.y,br.x-tl.x,br.y-tl.y);
   if(detailTexture){const d=detailTexture,pt=w2s(d.x,d.z);ctx.drawImage(d.canvas,pt.x,pt.y,d.canvas.width*4*st.scale,d.canvas.height*4*st.scale);}
   ctx.globalAlpha=1;
+  if(st.biomes&&highlightCanvas){ctx.imageSmoothingEnabled=false;ctx.drawImage(highlightCanvas,tl.x,tl.y,br.x-tl.x,br.y-tl.y);}
  }else{
   ctx.fillStyle='#dfe3f0';ctx.fillRect(tl.x,tl.y,br.x-tl.x,br.y-tl.y);
  }
+ if(st.strongholdRings&&st.dim==='overworld'&&currentEdition==='java')drawStrongholdRings();
+ drawMeasurement();
  // coordinate grid
  if(st.coordGrid)drawGrid();
  // chunk grid + slime
@@ -1300,6 +1334,24 @@ function render(){
  drawSpawn();
  updateHud();requestDetail();requestRecenter();
 }
+// Rings are approximate pre-biome-snap Java stronghold distance bands.
+function drawStrongholdRings(){
+ const o=w2s(0,0);ctx.save();ctx.strokeStyle='rgba(186,90,255,.75)';ctx.lineWidth=1.5;ctx.setLineDash([8,6]);
+ for(let i=0;i<8;i++)for(const radius of [1280+i*3072,2816+i*3072]){ctx.beginPath();ctx.arc(o.x,o.y,radius*st.scale,0,Math.PI*2);ctx.stroke();}ctx.restore();
+}
+let measuring=false,measurePoints=[],measureDimension=null;
+function updateMeasureStatus(){
+ const p=measurePoints;if(!p.length){$('measureStatus').textContent=measuring?'Tap the first point on the map.':'Select two points on the map to measure horizontal distance.';return;}
+ if(p.length===1){$('measureStatus').textContent='A: '+p[0].x+', '+p[0].z+' · select point B.';return;}
+ $('measureStatus').textContent='A: '+p[0].x+', '+p[0].z+' · B: '+p[1].x+', '+p[1].z+' · '+Math.round(Math.hypot(p[1].x-p[0].x,p[1].z-p[0].z)).toLocaleString()+' blocks';
+}
+function drawMeasurement(){
+ if(!measurePoints.length)return;ctx.save();ctx.lineWidth=2;ctx.strokeStyle='#ff3552';ctx.fillStyle='#ff3552';ctx.font='bold 13px '+canvasMono;
+ const pts=measurePoints.map(p=>w2s(p.x,p.z));if(pts.length===2){ctx.setLineDash([7,5]);ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);ctx.lineTo(pts[1].x,pts[1].y);ctx.stroke();ctx.setLineDash([]);}
+ pts.forEach((p,i)=>{ctx.beginPath();ctx.arc(p.x,p.y,5,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff';ctx.stroke();ctx.fillText(i?'B':'A',p.x+8,p.y-8);});ctx.restore();
+}
+$('measureToggle').onclick=()=>{measuring=!measuring;measurePoints=[];$('measureToggle').setAttribute('aria-pressed',String(measuring));$('measureToggle').textContent=measuring?'Stop measuring':'Start measuring';if(measuring&&isCompactUI()){setLayersOpen(false);setTouchMode(true);}updateMeasureStatus();render();};
+$('measureClear').onclick=()=>{measurePoints=[];updateMeasureStatus();render();};
 // Generate higher-resolution (4-block) biome samples for the visible area when zoomed in.
 // The overview remains at 16-block resolution; no fabricated block-level terrain is added.
 function requestDetail(){
@@ -1534,7 +1586,7 @@ function endPointer(e,cancelled){
  const shouldFling=dragging&&!cancelled&&moved&&!wasPinching;
  dragging=false;pinch=null;map.classList.remove('drag');
  if(shouldFling)startFling();
- if(!cancelled&&!moved){const r=map.getBoundingClientRect(),hit=hitTest(e.clientX-r.left,e.clientY-r.top);if(hit)selectStructure(hit);else closeDetail();}
+ if(!cancelled&&!moved){const r=map.getBoundingClientRect();if(measuring){const point=s2w(e.clientX-r.left,e.clientY-r.top);if(measurePoints.length>=2)measurePoints=[];measurePoints.push({x:Math.round(point.x),z:Math.round(point.z)});updateMeasureStatus();render();return;}const hit=hitTest(e.clientX-r.left,e.clientY-r.top);if(hit)selectStructure(hit);else closeDetail();}
 }
 map.addEventListener('pointerup',e=>endPointer(e,false));
 map.addEventListener('pointercancel',e=>endPointer(e,true));
@@ -1646,6 +1698,18 @@ function updateBiomeSuggestions(){
  for(let id=0;id<256;id++){const b=biomeById(id);if(!/^Biome \d+$/.test(b.name))names.add(b.name);}
  $('biomeSuggestions').innerHTML=Array.from(names).sort((a,b)=>a.localeCompare(b)).map(n=>'<option value="'+escapeHTML(n)+'"></option>').join('');
 }
+function rebuildBiomeHighlight(){
+ if(highlightWorld!==st.dim+'|'+$('verSel').value){highlightIds=null;highlightWorld=null;}highlightCanvas=null;if(!highlightIds||!overviewComplete||!overviewIds)return;
+ const c=document.createElement('canvas');c.width=c.height=512;const cx=c.getContext('2d'),img=cx.createImageData(512,512);
+ for(let i=0;i<overviewIds.length;i++)if(!highlightIds.has(overviewIds[i])){let j=i*4;img.data[j]=8;img.data[j+1]=8;img.data[j+2]=14;img.data[j+3]=175;}
+ cx.putImageData(img,0,0);highlightCanvas=c;
+}
+$('biomeHighlight').onclick=()=>{
+ const query=$('biomeQuery').value.trim().toLowerCase().replace(/[_\s]+/g,' ');const matches=new Set();
+ for(let id=0;id<256;id++)if(biomeById(id).name.toLowerCase().replace(/[_\s]+/g,' ')===query)matches.add(id);
+ if(!query||!matches.size){toast('Enter a recognized biome name');return;}highlightIds=matches;highlightWorld=st.dim+'|'+$('verSel').value;rebuildBiomeHighlight();render();toast(overviewComplete?'Biome highlighted':'Highlight will appear when map loads');
+};
+$('biomeHighlightClear').onclick=()=>{highlightIds=null;highlightWorld=null;highlightCanvas=null;render();toast('Highlight cleared');};
 function findBiome(){
  const query=$('biomeQuery').value.trim().toLowerCase().replace(/[_\s]+/g,' ');const result=$('biomeResult');
  if(!query){result.textContent='Enter a biome name.';return;}
@@ -1688,6 +1752,7 @@ mm.addEventListener('pointerup',()=>mmDown=false);
 function setLayersOpen(open){document.body.classList.toggle('side-open',open);$('mobileLayers').setAttribute('aria-expanded',String(open));}
 /* generic events */
 document.addEventListener('click',e=>{
+ const sample=e.target.closest('[data-sample-seed]');if(sample){setSeed(sample.dataset.sampleSeed,false);openWorkspace('all','overworld');return;}
  const open=e.target.closest('[data-open]');
  if(open){e.preventDefault();openWorkspace(open.dataset.open,open.dataset.dim||(open.dataset.open==='all'?st.dim:'overworld'));return;}
  const save=e.target.closest('[data-save-pin]');if(save){const s=structures.find(q=>q.id===save.dataset.savePin);if(s)saveWaypoint($('pinWaypointName').value,s.x,s.z);return;}
@@ -1705,7 +1770,7 @@ document.addEventListener('click',e=>{
  if(dim){st.dim=dim.dataset.dim;syncDims();renderSidebar();loadWorld(true);return;}
  const org=e.target.closest('#originSeg button');
  if(org){st.origin=org.dataset.origin;document.querySelectorAll('#originSeg button').forEach(b=>b.classList.toggle('on',b===org));return;}
- if(e.target.closest('#backBtn, [data-open-home]')){if($('loading').classList.contains('on')){genToken++;stopBiomeWorkers();cancelStrongholdWorker();overviewComplete=false;builtSeed=null;$('loading').classList.remove('on');}st.view='landing';document.body.dataset.view='landing';setLayersOpen(false);setTouchMode(false);window.scrollTo(0,0);resizeMap();requestAnimationFrame(drawHero);return;}
+ if(e.target.closest('#backBtn, [data-open-home]')){stopSeedFinder();if($('loading').classList.contains('on')){genToken++;stopBiomeWorkers();cancelStrongholdWorker();overviewComplete=false;builtSeed=null;$('loading').classList.remove('on');}st.view='landing';document.body.dataset.view='landing';setLayersOpen(false);setTouchMode(false);window.scrollTo(0,0);resizeMap();requestAnimationFrame(drawHero);return;}
  if(e.target.closest('#mobileLayers')){setLayersOpen(!document.body.classList.contains('side-open'));return;}
  if(e.target.closest('#closeLayers, #sheetBackdrop')){setLayersOpen(false);return;}
 });
@@ -1715,10 +1780,39 @@ $('zHome').onclick=()=>{animateTo(0,0);st.scale=Math.max(.30,minMapScale());rend
 $('randBtn').onclick=()=>{setSeed(String(Math.floor(Math.random()*9e9)+1e9),true);toast('New seed: '+seedText);};
 $('shareBtn').onclick=()=>{
  let u='';
- try{u=location.origin+location.pathname+'?seed='+encodeURIComponent(seedText)+'&dim='+st.dim+'&version='+encodeURIComponent($('verSel').value)+'&x='+Math.round(st.cam.x)+'&z='+Math.round(st.cam.z);}catch(_){u='seed='+seedText+' · '+st.dim;}
+ try{u=location.origin+location.pathname+'?seed='+encodeURIComponent(seedText)+'&dim='+st.dim+'&version='+encodeURIComponent($('verSel').value)+'&x='+Math.round(st.cam.x)+'&z='+Math.round(st.cam.z)+'&zoom='+encodeURIComponent(st.scale.toFixed(4))+'&layers='+encodeURIComponent(Object.keys(st.layers).filter(k=>st.layers[k]).join(','));}catch(_){u='seed='+seedText+' · '+st.dim;}
  copyText(u);
 };
+/* Local-only seed collection, separate from map waypoints. */
+const SAVED_SEED_KEY='ezseed-saved-seeds-v1';let savedSeeds=[];
+try{const v=JSON.parse(localStorage.getItem(SAVED_SEED_KEY)||'[]');if(Array.isArray(v))savedSeeds=v.filter(x=>x&&typeof x.seed==='string'&&x.seed.length<=100&&typeof x.name==='string'&&x.name.length<=40&&MC_VERSIONS[x.version]&&DIMS[x.dim]).slice(0,100);}catch(_){}
+function renderSavedSeeds(){
+ $('savedSeedCount').textContent=String(savedSeeds.length);const root=$('savedSeedList');root.replaceChildren();
+ for(const [i,s] of savedSeeds.entries()){const row=document.createElement('div');row.className='waypoint-row';const go=document.createElement('button');go.type='button';go.className='result';go.textContent=(s.name||s.seed)+' · '+s.version+' · '+DIMS[s.dim].label;go.onclick=()=>{$('heroVer').value=s.version;$('verSel').value=s.version;updateVersionPickers();st.dim=s.dim;syncDims();setSeed(s.seed,true);if(isCompactUI())setLayersOpen(false);};const del=document.createElement('button');del.type='button';del.className='iconbtn';del.setAttribute('aria-label','Delete saved seed '+(s.name||s.seed));del.textContent='×';del.onclick=()=>{const next=savedSeeds.filter((_,j)=>j!==i);try{localStorage.setItem(SAVED_SEED_KEY,JSON.stringify(next));savedSeeds=next;renderSavedSeeds();}catch(_){toast('Could not update saved seeds');}};row.append(go,del);root.append(row);}
+}
+$('saveSeed').onclick=()=>{const name=$('savedSeedName').value.trim(),entry={name,seed:seedText,version:$('verSel').value,dim:st.dim};if(savedSeeds.length>=100){toast('Saved seed limit reached');return;}try{localStorage.setItem(SAVED_SEED_KEY,JSON.stringify([...savedSeeds,entry]));savedSeeds.push(entry);$('savedSeedName').value='';renderSavedSeeds();toast('Seed saved on this device');}catch(_){toast('Could not save seed on this device');}};
+renderSavedSeeds();
 $('findBtn').onclick=findNearest;
+$('seedSummary').onclick=()=>{if(!overviewComplete){$('seedSummaryResult').textContent='Map is still loading.';return;}const parts=DIMS[st.dim].types.map(t=>TYPES[t].name+': '+(counts[t]||0));$('seedSummaryResult').textContent='Loaded region: '+parts.join(' · ')+'. Biomes: '+observedBiomes.size+'. Predictions only; this is not an official quality score.';};
+let seedFinderWorker=null;
+function stopSeedFinder(){if(seedFinderWorker){seedFinderWorker.terminate();seedFinderWorker=null;}}
+function seedFinderWorkerMain(){
+ self.onmessage=async e=>{try{const m=e.data,wasi=new Proxy({},{get:()=>()=>0}),result=await WebAssembly.instantiate(m.module,{wasi_snapshot_preview1:wasi}),g=result.exports||result.instance.exports;g._initialize();let checked=0,matches=0;const out=g.engine_alloc(4096*8);if(!out)throw Error('Allocation failed');
+ function batch(){let started=performance.now();do{const v=new Uint32Array(2);crypto.getRandomValues(v);g.engine_init(m.version,v[0],v[1],0);const n=g.engine_structures(m.type,-m.radius,-m.radius,m.radius,m.radius,out,4096),coords=new Int32Array(g.memory.buffer,out,n*2);let count=0;for(let j=0;j<n;j++)if(coords[j*2]**2+coords[j*2+1]**2<=m.radius*m.radius)count++;checked++;if(count>=m.min){const bits=(BigInt(v[1])<<32n)|BigInt(v[0]),seed=BigInt.asIntN(64,bits).toString();self.postMessage({seed,count,checked});matches++;}if(checked>=m.limit||matches>=10){g.engine_free(out);self.postMessage({done:true,checked,matches});return;}}while(performance.now()-started<30);self.postMessage({progress:true,checked,matches});setTimeout(batch,0);}batch();
+ }catch(err){self.postMessage({error:String(err)});}};
+}
+$('seedSearchStop').onclick=()=>{stopSeedFinder();$('seedSearchStatus').textContent='Search stopped.';};
+$('seedSearchStart').onclick=()=>{
+ stopSeedFinder();const radius=Number($('seedSearchRadius').value),min=Number($('seedSearchCount').value),type=$('seedSearchType').value;
+ if(!Number.isInteger(radius)||radius<128||radius>3000||!Number.isInteger(min)||min<1||min>10||!STRUCT_IDS[type]){$('seedSearchStatus').textContent='Use a radius from 128 to 3000 and minimum count from 1 to 10.';return;}
+ const version=$('verSel').value,edition=version.startsWith('Bedrock')?'bedrock':'java';if(!engineModules[edition]||typeof Worker==='undefined'){$('seedSearchStatus').textContent='Background workers are not available in this browser.';return;}
+ $('seedSearchResults').innerHTML='';$('seedSearchStatus').textContent='Starting search…';let worker,url;
+ try{url=URL.createObjectURL(new Blob(['('+seedFinderWorkerMain.toString()+')()'],{type:'text/javascript'}));worker=new Worker(url);URL.revokeObjectURL(url);seedFinderWorker=worker;
+ worker.onmessage=e=>{if(worker!==seedFinderWorker)return;const r=e.data;if(r.error){$('seedSearchStatus').textContent='Search failed in this browser.';stopSeedFinder();return;}if(r.seed){const btn=document.createElement('button');btn.type='button';btn.className='result';btn.dataset.seedResult=r.seed;btn.dataset.seedVersion=version;btn.textContent=r.seed+' · '+r.count+' '+TYPES[type].name+(r.count===1?'':'s');$('seedSearchResults').append(btn);}if(r.progress||r.seed)$('seedSearchStatus').textContent='Checked '+r.checked+' seeds · '+(r.matches??$('seedSearchResults').children.length)+' matches · '+version;if(r.done){$('seedSearchStatus').textContent='Finished: checked '+r.checked+' seeds · '+r.matches+' matches · '+version;stopSeedFinder();}};
+ worker.onerror=e=>{e.preventDefault();$('seedSearchStatus').textContent='Search failed in this browser.';stopSeedFinder();};worker.postMessage({module:engineModules[edition],version:MC_VERSIONS[version],type:STRUCT_IDS[type],radius,min,limit:250});
+ }catch(err){if(url)URL.revokeObjectURL(url);stopSeedFinder();$('seedSearchStatus').textContent='Could not start search.';}
+};
+$('seedSearchResults').onclick=e=>{const btn=e.target.closest('[data-seed-result]');if(!btn)return;stopSeedFinder();if(MC_VERSIONS[btn.dataset.seedVersion]){$('verSel').value=btn.dataset.seedVersion;$('heroVer').value=btn.dataset.seedVersion;updateVersionPickers();}st.dim='overworld';syncDims();setSeed(btn.dataset.seedResult,true);if(isCompactUI())setLayersOpen(false);};
 $('jumpBtn').onclick=()=>{const xv=$('jumpX').value.trim(),zv=$('jumpZ').value.trim();if(!/^-?\d+$/.test(xv)||!/^-?\d+$/.test(zv)){toast('Enter whole-number X and Z coordinates');return;}const x=Number(xv),z=Number(zv);if(!Number.isSafeInteger(x)||!Number.isSafeInteger(z)||Math.abs(x)>MAX_COORD||Math.abs(z)>MAX_COORD){toast('Coordinates must be within ±100,000,000');return;}st.cam.x=x;st.cam.z=z;setLayersOpen(false);generateCurrentRegion();if(isCompactUI())$('mapArea').scrollIntoView({block:'start'});};
 $('resetLayers').onclick=()=>{applyFocus('all');st.selected=null;renderSidebar();render();drawMinimap();toast('All layers enabled');};
 $('biomesChk').onchange=e=>{st.biomes=e.target.checked;render();};
@@ -1750,6 +1844,7 @@ document.addEventListener('keydown',e=>{
  else if(e.key==='ArrowUp'){st.cam.z-=pan;clampCam();render();drawMinimap();}
  else if(e.key==='ArrowDown'){st.cam.z+=pan;clampCam();render();drawMinimap();}
  else if(e.key==='g'){st.coordGrid=!st.coordGrid;renderSidebar();render();}
+ else if(e.key==='m'){e.preventDefault();$('measureToggle').click();}
  else if(e.key==='Escape'){hideTip();closeDetail();setLayersOpen(false);}
 });
 window.addEventListener('resize',()=>{dpr=Math.min(window.devicePixelRatio||1,2);resizeMap();render();drawMinimap();drawHero();});
@@ -1830,7 +1925,7 @@ if(matchMedia('(display-mode: standalone)').matches||navigator.standalone)$('ins
   const wasi=new Proxy({}, {get:()=>()=>0});
   const [result,br]=await Promise.all([WebAssembly.instantiate(decodeWasm(WASM_BASE64),{wasi_snapshot_preview1:wasi}),WebAssembly.instantiate(decodeWasm(BEDROCK_WASM_BASE64),{wasi_snapshot_preview1:wasi})]);
   engineModules.java=result.module;engineModules.bedrock=br.module;engines.java=result.instance.exports;engines.java._initialize();engines.bedrock=br.instance.exports;engines.bedrock._initialize();engine=engines.java;
-  try{const q=new URLSearchParams(location.search);if(q.get('seed'))setSeed(q.get('seed'),false);if(q.get('dim')&&DIMS[q.get('dim')])st.dim=q.get('dim');if(MC_VERSIONS[q.get('version')]){$('heroVer').value=q.get('version');$('verSel').value=q.get('version');}const qx=q.get('x'),qz=q.get('z');if(qx!==null&&qz!==null&&/^-?\d+$/.test(qx)&&/^-?\d+$/.test(qz)){st.cam.x=Math.max(-MAX_COORD,Math.min(MAX_COORD,Number(qx)));st.cam.z=Math.max(-MAX_COORD,Math.min(MAX_COORD,Number(qz)));}}catch(_){}
+  try{const q=new URLSearchParams(location.search);if(q.get('seed'))setSeed(q.get('seed'),false);if(q.get('dim')&&DIMS[q.get('dim')])st.dim=q.get('dim');if(MC_VERSIONS[q.get('version')]){$('heroVer').value=q.get('version');$('verSel').value=q.get('version');}const zoom=Number(q.get('zoom'));if(q.has('zoom')&&Number.isFinite(zoom)&&zoom>=MIN&&zoom<=MAX)st.scale=zoom;if(q.has('layers')){const wanted=new Set(q.get('layers').split(','));Object.keys(st.layers).forEach(k=>st.layers[k]=wanted.has(k));}const qx=q.get('x'),qz=q.get('z');if(qx!==null&&qz!==null&&/^-?\d+$/.test(qx)&&/^-?\d+$/.test(qz)){st.cam.x=Math.max(-MAX_COORD,Math.min(MAX_COORD,Number(qx)));st.cam.z=Math.max(-MAX_COORD,Math.min(MAX_COORD,Number(qz)));}}catch(_){}
   updateVersionPickers();
   document.querySelectorAll('[data-open]').forEach(b=>b.removeAttribute('aria-disabled'));
   // Initial preview is a real biome sample of the default Java seed, with illustrative markers.
