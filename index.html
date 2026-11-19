@@ -480,6 +480,15 @@ body[data-mode="dark"] .hero-copy .under{color:#ff5268}
 @media(prefers-reduced-motion:reduce){.sidebar,#sheetBackdrop{transition:none!important}}
 @media(max-width:1000px){.hero{grid-template-columns:minmax(0,1fr)}}
 .section-head h2,.creator h2{letter-spacing:-.02em}
+/* Keep the export action in the map's bottom-left corner without covering the HUD. */
+#downloadMap{left:16px;bottom:16px;min-height:44px;padding:9px 13px;border-radius:11px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);color:var(--ink);font-size:12px;font-weight:750;z-index:4}
+#coords{bottom:68px}
+#scalebar{bottom:122px}
+@media(max-width:760px){
+ #downloadMap{left:max(10px,env(safe-area-inset-left));bottom:max(10px,env(safe-area-inset-bottom));min-height:44px}
+ #coords{bottom:calc(max(10px,env(safe-area-inset-bottom)) + 54px)}
+ #scalebar{bottom:calc(max(10px,env(safe-area-inset-bottom)) + 108px)}
+}
 </style>
 </head>
 <body data-view="landing">
@@ -673,6 +682,7 @@ body[data-mode="dark"] .hero-copy .under{color:#ff5268}
       <div id="pinTip" class="overlay glass"></div>
       <div id="detailCard" class="overlay glass"></div>
       <div id="zoomStack" class="overlay"></div>
+      <button class="btn overlay" id="downloadMap" type="button" title="Download map image" aria-label="Download map image"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11m-4-4 4 4 4-4"/><path d="M4 17v3h16v-3"/></svg> Download</button>
       <div id="coords" class="overlay glass">
         <div><span class="k">Cursor</span><span class="v" id="cursorCoords">x 0 · z 0</span></div>
         <div class="sep"></div>
@@ -740,7 +750,7 @@ $('navArrow').innerHTML=svg('arrow',14); $('heroArrow').innerHTML=svg('arrow',14
 $('backBtn').innerHTML=svg('back',15); $('randBtn').innerHTML=svg('dice',15);
 $('mobileLayers').innerHTML=svg('layers',15); $('searchIcon').innerHTML=svg('search',14);
 $('findIcon').innerHTML=svg('locate',14);
-$('zoomStack').innerHTML='<button class="iconbtn" id="zIn" title="Zoom in" aria-label="Zoom in">'+svg('plus',17)+'</button><button class="iconbtn" id="zOut" title="Zoom out" aria-label="Zoom out">'+svg('minus',17)+'</button><button class="iconbtn" id="zHome" title="Recenter on origin" aria-label="Recenter on origin">'+svg('cross',17)+'</button><button class="iconbtn" id="mapFullscreen" type="button" title="Full screen map" aria-label="Full screen map" aria-pressed="false">'+svg('expand',17)+'</button><button class="iconbtn" id="downloadMap" type="button" title="Download map image" aria-label="Download map image">↓</button>';
+$('zoomStack').innerHTML='<button class="iconbtn" id="zIn" title="Zoom in" aria-label="Zoom in">'+svg('plus',17)+'</button><button class="iconbtn" id="zOut" title="Zoom out" aria-label="Zoom out">'+svg('minus',17)+'</button><button class="iconbtn" id="zHome" title="Recenter on origin" aria-label="Recenter on origin">'+svg('cross',17)+'</button><button class="iconbtn" id="mapFullscreen" type="button" title="Full screen map" aria-label="Full screen map" aria-pressed="false">'+svg('expand',17)+'</button>';
 
 /* ============================ config ============================ */
 const WORLD=8192, HALF=4096, MAX_COORD=100000000;
