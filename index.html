@@ -493,7 +493,11 @@ body[data-mode="dark"] .hero-copy .under{color:#ff5268}
 #mapArea{--map-right:16px;--overview-size:150px;--overview-top:16px}
 #mapArea:fullscreen,body.map-fullscreen-fallback #mapArea{--map-right:max(16px,env(safe-area-inset-right))}
 #zoomStack{align-items:center;gap:8px}
-#zoomStack .zoom-pill{display:flex;flex-direction:column;align-items:center;padding:3px;border:1px solid var(--line);border-radius:999px;background:var(--surface);box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.62)}
+#zoomStack .zoom-pill{display:flex;flex-direction:column;align-items:center;padding:3px;border:1px solid rgba(255,255,255,.5);border-radius:999px;background:rgba(255,255,255,.35);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.45)}
+body[data-mode="dark"] #zoomStack .zoom-pill{background:rgba(16,16,20,.35);border-color:rgba(255,255,255,.22);box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.1)}
+#zoomStack .zoom-pill .iconbtn{color:var(--ink)}
+#zoomStack .zoom-pill .iconbtn svg{filter:drop-shadow(0 1px 1px rgba(255,255,255,.35))}
+body[data-mode="dark"] #zoomStack .zoom-pill .iconbtn svg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.65))}
 #zoomStack .zoom-pill .iconbtn{width:38px;height:38px;flex:0 0 38px;border:0;border-radius:50%;background:transparent;box-shadow:none}
 #zoomStack .zoom-pill .iconbtn:hover{background:var(--surface2)}
 #zoomStack .zoom-divider{width:23px;height:1px;background:var(--line)}
