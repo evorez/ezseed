@@ -1497,7 +1497,7 @@ function heroLoop(){if(st.view==='landing')drawHero();}
 
 /* Seed-derived 3D surface preview. Heights are approximations, not block terrain. */
 const terrainCanvas=$('terrain3DCanvas');
-let terrainGL=null,terrainProgram=null,terrainBuffers=null,terrainView=false,terrainWorker=null,terrainJob=0,terrainYaw=.72,terrainPitch=.76,terrainDistance=2650,terrainData=null;
+let terrainGL=null,terrainProgram=null,terrainBuffers=null,terrainView=false,terrainWorker=null,terrainFallback=null,terrainWatchdog=0,terrainJob=0,terrainYaw=.72,terrainPitch=.76,terrainDistance=2650,terrainData=null;
 function terrainWorkerMain(){
  self.onmessage=async e=>{try{const m=e.data,wasi=new Proxy({}, {get:()=>()=>0});const result=await WebAssembly.instantiate(m.module,{wasi_snapshot_preview1:wasi});const g=result.exports||result.instance.exports;g._initialize();g.engine_init(m.version,m.lo,m.hi,0);
  const n=m.n,count=n*n,hp=g.engine_alloc(count*4),ip=g.engine_alloc(count*4);if(!hp||!ip)throw Error('Memory allocation failed');
@@ -1506,12 +1506,48 @@ function terrainWorkerMain(){
  self.postMessage({heights:heights.buffer,ids:ids.buffer,n,x:m.x,z:m.z,step:m.step},[heights.buffer,ids.buffer]);
  }catch(err){self.postMessage({error:String(err)});}};
 }
-function stopTerrainWorker(){if(terrainWorker){terrainWorker.terminate();terrainWorker=null;}}
+function stopTerrainWorker(){
+ if(terrainWatchdog){clearTimeout(terrainWatchdog);terrainWatchdog=0;}
+ if(terrainWorker){terrainWorker.terminate();terrainWorker=null;}
+ if(terrainFallback){const f=terrainFallback;terrainFallback=null;clearTimeout(f.timer);if(f.hp)f.g.engine_free(f.hp);if(f.ip)f.g.engine_free(f.ip);}
+}
+// Some Android browsers cannot clone a WebAssembly.Module to a worker, or block blob workers.
+// If that happens, sample the SAME worldgen engine in small, cancellable tiles on the UI thread.
+function fallbackTerrain(m,job,done){
+ if(!terrainView||job!==terrainJob)return;
+ stopTerrainWorker();$('terrain3DStatus').textContent='Generating approximate 3D terrain (compatibility mode)…';
+ const g=engine,heights=new Float32Array(m.n*m.n),ids=new Int32Array(m.n*m.n);
+ let hp=0,ip=0;
+ try{
+  hp=g.engine_alloc(8*8*4);ip=g.engine_alloc(8*8*4);
+  if(!hp||!ip)throw Error('Memory allocation failed');
+  const tiles=[];
+  for(let z=0;z<m.n;z+=8)for(let x=0;x<m.n;x+=8){
+   if(x+8<=m.n&&z+8<=m.n)tiles.push([x,z,8]);
+   else for(let zz=z;zz<Math.min(z+8,m.n);zz++)for(let xx=x;xx<Math.min(x+8,m.n);xx++)tiles.push([xx,zz,1]);
+  }
+  const f=terrainFallback={g,hp,ip,timer:0};let i=0;
+  function run(){
+   if(terrainFallback!==f||!terrainView||job!==terrainJob)return;
+   try{
+    const deadline=performance.now()+8;
+    do{
+     const [x,z,n]=tiles[i++];if(g.engine_height_samples(m.x+x*m.step,m.z+z*m.step,m.step,n,hp,ip)!==0)throw Error('Height sampling failed');
+     const h=new Float32Array(g.memory.buffer,hp,n*n),b=new Int32Array(g.memory.buffer,ip,n*n);
+     for(let row=0;row<n;row++){const offset=(z+row)*m.n+x;heights.set(h.subarray(row*n,(row+1)*n),offset);ids.set(b.subarray(row*n,(row+1)*n),offset);}
+    }while(i<tiles.length&&performance.now()<deadline);
+    if(i<tiles.length){$('terrain3DStatus').textContent='Generating approximate 3D terrain… '+Math.floor(i*100/tiles.length)+'%';f.timer=setTimeout(run,0);}
+    else done({heights:heights.buffer,ids:ids.buffer,n:m.n,x:m.x,z:m.z,step:m.step});
+   }catch(err){done({error:String(err)});}
+  }
+  f.timer=setTimeout(run,0);
+ }catch(err){if(terrainFallback)stopTerrainWorker();else{if(hp)g.engine_free(hp);if(ip)g.engine_free(ip);}done({error:String(err)});}
+}
 function terrainShader(gl,type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){const msg=gl.getShaderInfoLog(s);gl.deleteShader(s);throw Error(msg||'Shader error');}return s;}
 function initTerrainGL(){
  if(terrainGL)return true;
  try{
-  const gl=terrainCanvas.getContext('webgl',{antialias:true,alpha:false,preserveDrawingBuffer:true})||terrainCanvas.getContext('experimental-webgl',{antialias:true,alpha:false,preserveDrawingBuffer:true});if(!gl)return false;
+  const opts={antialias:!matchMedia('(pointer: coarse)').matches,alpha:false,preserveDrawingBuffer:true,powerPreference:'low-power'};const gl=terrainCanvas.getContext('webgl',opts)||terrainCanvas.getContext('experimental-webgl',opts);if(!gl)return false;
   const vs=terrainShader(gl,gl.VERTEX_SHADER,'attribute vec3 aPosition; attribute vec3 aColor; uniform mat4 uView; uniform mat4 uProjection; varying vec3 vColor; void main(){vColor=aColor;gl_Position=uProjection*uView*vec4(aPosition,1.0);}');
   const fs=terrainShader(gl,gl.FRAGMENT_SHADER,'precision mediump float; varying vec3 vColor; void main(){gl_FragColor=vec4(vColor,1.0);}');
   const program=gl.createProgram();gl.attachShader(program,vs);gl.attachShader(program,fs);gl.linkProgram(program);gl.deleteShader(vs);gl.deleteShader(fs);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error('Shader link failed');
@@ -1536,7 +1572,7 @@ function uploadTerrain(data){
  gl.bindBuffer(gl.ARRAY_BUFFER,terrainBuffers.position);gl.bufferData(gl.ARRAY_BUFFER,positions,gl.STATIC_DRAW);gl.bindBuffer(gl.ARRAY_BUFFER,terrainBuffers.color);gl.bufferData(gl.ARRAY_BUFFER,colors,gl.STATIC_DRAW);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,terrainBuffers.indices);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,indices,gl.STATIC_DRAW);terrainBuffers.count=indices.length;terrainData={x:data.x,z:data.z,step:data.step,n,min:Math.min(...displayHeights),max:Math.max(...displayHeights)};
 }
 function renderTerrain(){
- if(!terrainView||!terrainGL)return;const gl=terrainGL,r=terrainCanvas.getBoundingClientRect();if(!r.width||!r.height)return;const ratio=Math.min(window.devicePixelRatio||1,2),w=Math.max(1,Math.round(r.width*ratio)),h=Math.max(1,Math.round(r.height*ratio));if(terrainCanvas.width!==w||terrainCanvas.height!==h){terrainCanvas.width=w;terrainCanvas.height=h;}
+ if(!terrainView||!terrainGL)return;const gl=terrainGL,r=terrainCanvas.getBoundingClientRect();if(!r.width||!r.height)return;const ratio=Math.min(window.devicePixelRatio||1,matchMedia('(pointer: coarse)').matches?1.5:2),w=Math.max(1,Math.round(r.width*ratio)),h=Math.max(1,Math.round(r.height*ratio));if(terrainCanvas.width!==w||terrainCanvas.height!==h){terrainCanvas.width=w;terrainCanvas.height=h;}
  gl.viewport(0,0,w,h);gl.clearColor(.72,.81,.87,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);if(!terrainBuffers.count)return;gl.useProgram(terrainProgram);
  const eye=[Math.sin(terrainYaw)*Math.cos(terrainPitch)*terrainDistance,Math.sin(terrainPitch)*terrainDistance,Math.cos(terrainYaw)*Math.cos(terrainPitch)*terrainDistance];
  gl.uniformMatrix4fv(gl.getUniformLocation(terrainProgram,'uView'),false,terrainLookAt(eye));gl.uniformMatrix4fv(gl.getUniformLocation(terrainProgram,'uProjection'),false,terrainPerspective(Math.PI/4,w/h,5,15000));
@@ -1544,15 +1580,25 @@ function renderTerrain(){
  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,terrainBuffers.indices);gl.drawElements(gl.TRIANGLES,terrainBuffers.count,gl.UNSIGNED_SHORT,0);
 }
 function scheduleTerrain(){
- if(!terrainView||st.view!=='workspace'||st.dim!=='overworld'||!terrainGL||!engineModules[currentEdition])return;
+ if(!terrainView||st.view!=='workspace'||st.dim!=='overworld'||!terrainGL)return;
  stopTerrainWorker();const job=++terrainJob,n=65,step=32,x=Math.floor((st.cam.x-(n-1)*step/2)/step)*step,z=Math.floor((st.cam.z-(n-1)*step/2)/step)*step;
- terrainData=null;terrainBuffers.count=0;$('terrain3DStatus').textContent='Generating approximate 3D terrain…';renderTerrain();let url;
- const done=data=>{if(!terrainView||job!==terrainJob)return;stopTerrainWorker();if(data.error){$('terrain3DStatus').textContent='3D terrain could not be generated. Return to 2D and try again.';return;}uploadTerrain(data);$('terrain3DStatus').textContent='Approximate surface (height exaggerated)'+(currentEdition==='bedrock'?' · Bedrock experimental':'')+' · drag to rotate · + / − to zoom';renderTerrain();};
+ terrainData=null;terrainBuffers.count=0;$('terrain3DStatus').textContent='Generating approximate 3D terrain…';renderTerrain();
+ const done=data=>{if(!terrainView||job!==terrainJob)return;stopTerrainWorker();if(data.error){$('terrain3DStatus').textContent='3D could not load on this device. Switch to 2D, then try again.';return;}try{uploadTerrain(data);$('terrain3DStatus').textContent='Approximate surface (height exaggerated)'+(currentEdition==='bedrock'?' · Bedrock experimental':'')+' · drag to rotate · + / − to zoom';renderTerrain();}catch(err){console.warn('3D rendering failed:',err);$('terrain3DStatus').textContent='3D could not render on this device. Switch to 2D, then try again.';}};
  const message={module:engineModules[currentEdition],version:engineVersion,lo:Number(seedBits&0xffffffffn),hi:Number((seedBits>>32n)&0xffffffffn),n,step,x,z};
+ let url;
  try{
-  if(typeof Worker==='undefined')throw Error('Workers unavailable');url=URL.createObjectURL(new Blob(['('+terrainWorkerMain.toString()+')()'],{type:'text/javascript'}));const w=new Worker(url);URL.revokeObjectURL(url);url=null;terrainWorker=w;w.onmessage=e=>done(e.data);w.onerror=e=>{e.preventDefault();done({error:'Worker failed'});};w.postMessage(message);
- }catch(e){if(url)URL.revokeObjectURL(url);stopTerrainWorker();$('terrain3DStatus').textContent='Background worker unavailable. Return to 2D.';}
+  if(typeof Worker==='undefined'||!message.module)throw Error('Workers unavailable');
+  url=URL.createObjectURL(new Blob(['('+terrainWorkerMain.toString()+')()'],{type:'text/javascript'}));const w=new Worker(url);URL.revokeObjectURL(url);url=null;terrainWorker=w;
+  w.onmessage=e=>{if(w!==terrainWorker)return;if(e.data.error)fallbackTerrain(message,job,done);else done(e.data);};
+  w.onerror=e=>{e.preventDefault();if(w===terrainWorker)fallbackTerrain(message,job,done);};
+  w.onmessageerror=()=>{if(w===terrainWorker)fallbackTerrain(message,job,done);};
+  w.postMessage(message);
+  terrainWatchdog=setTimeout(()=>{if(w===terrainWorker)fallbackTerrain(message,job,done);},25000);
+ }catch(e){if(url)URL.revokeObjectURL(url);fallbackTerrain(message,job,done);}
 }
+// Mobile GPUs can temporarily discard WebGL contexts under memory pressure.
+terrainCanvas.addEventListener('webglcontextlost',e=>{e.preventDefault();terrainJob++;stopTerrainWorker();terrainGL=null;terrainProgram=null;terrainBuffers=null;terrainData=null;if(terrainView)$('terrain3DStatus').textContent='Graphics paused by device. Trying to restore 3D…';});
+terrainCanvas.addEventListener('webglcontextrestored',()=>{terrainGL=null;terrainProgram=null;terrainBuffers=null;if(terrainView){if(initTerrainGL())scheduleTerrain();else $('terrain3DStatus').textContent='3D graphics could not be restored. Switch to 2D and try again.';}});
 function setTerrainView(on){
  if(on&&st.dim!=='overworld'){toast('3D preview is available in the Overworld only');return;}
  if(on&&!initTerrainGL()){toast('3D needs WebGL; use 2D on this device');return;}
